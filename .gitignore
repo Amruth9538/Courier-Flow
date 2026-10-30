@@ -1,0 +1,22 @@
+# Local secrets — copy database.example.php to database.php
+/database.php
+
+# Uploaded delivery proofs and other user files
+/uploads/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Node helper tools
+/node_modules/
+# Project backup files
+admin/parcels_backup.txt
+rider-dashboard-backup.txt.php
+
+# Local database testing file
+check-db.php
+/install.php

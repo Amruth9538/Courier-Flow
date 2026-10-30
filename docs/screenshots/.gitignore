@@ -1,0 +1,28 @@
+# Database credentials and API keys
+database.php
+.env
+.env.*
+!.env.example
+
+# Local configuration containing secrets
+config.local.php
+secrets.php
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+
+# Editor and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+# Local database installer
+install.php

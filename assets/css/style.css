@@ -1,0 +1,605 @@
+:root {
+    --bg: #f4f7fb;
+    --surface: #ffffff;
+    --text: #11223a;
+    --muted: #6b7a90;
+    --primary: #2f6fed;
+    --accent: #17a589;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --border: #dfe7f1;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
+a { color: inherit; text-decoration: none; }
+.auth-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: linear-gradient(135deg, #0f2f5f, #2f6fed); }
+.auth-card { width: min(100%, 460px); background: var(--surface); border-radius: 16px; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.18); }
+.auth-card__header h1 { margin: 0 0 8px; font-size: 1.6rem; }
+.auth-card__header p { margin: 0 0 20px; color: var(--muted); }
+.auth-form label { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; font-weight: 600; }
+.auth-form input, .auth-form select, .auth-form textarea, .table-search input, .table-search select, .form-grid input, .form-grid textarea, .form-grid select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 1rem; }
+.btn { border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 700; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-success { background: var(--accent); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-secondary { background: #e8eef8; color: var(--text); }
+.alert { padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; }
+.alert-error { background: #fde7e7; color: #b42318; }
+.alert-success { background: #e8f7f1; color: #067647; }
+.app-shell { display: flex; min-height: 100vh; }
+.sidebar { width: 260px; background: #0d1b2a; color: white; padding: 24px 18px; }
+.brand h2 { margin: 0; }
+.brand p { color: #7da0cb; margin: 6px 0 22px; }
+.nav-links { display: flex; flex-direction: column; gap: 8px; }
+.nav-link { padding: 12px 14px; border-radius: 10px; color: #dbeafe; }
+.nav-link:hover { background: rgba(255,255,255,0.12); }
+.content { flex:1; padding: 24px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.topbar h1 { margin: 0 0 4px; }
+.topbar p { margin: 0; color: var(--muted); }
+.status-pill { background: #e8f3ff; color: var(--primary); padding: 8px 12px; border-radius: 999px; font-weight: 700; }
+.stats-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+.stat-card h3 { margin: 0 0 8px; color: var(--muted); font-size: 0.95rem; }
+.stat-card p { margin: 0; font-size: 1.5rem; font-weight: 700; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 20px; }
+.panel h2 { margin-top: 0; }
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align:left; }
+.badge { display:inline-block; padding: 6px 10px; border-radius:999px; font-size: 0.9rem; font-weight:700; }
+.badge-pending { background:#fef3c7; color:#92400e; }
+.badge-out { background:#dbeafe; color:#1d4ed8; }
+.badge-delivered { background:#dcfce7; color:#166534; }
+.badge-failed { background:#fee2e2; color:#b91c1c; }
+.form-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.form-actions { display:flex; gap:10px; margin-top: 16px; }
+.table-search { display:flex; gap:10px; margin-bottom: 14px; align-items:center; flex-wrap:wrap; }
+.map { height: 580px !important; min-height: 580px !important; border-radius: 12px; overflow:hidden; border:1px solid var(--border); }
+.bootstrap-map-marker { background: transparent !important; border: 0 !important; }
+.map-marker-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.28); border: 3px solid #fff; }
+.map-marker-icon i { font-size: 21px; line-height: 1; }
+.map-marker-rider { background: #2563eb; color: #fff; }
+.map-marker-destination { background: #dc2626; color: #fff; }
+.activity-list { display:flex; flex-direction:column; gap:10px; }
+.activity-item { padding: 10px 12px; background: #f8fafc; border-radius: 10px; }
+.inline-actions a { margin-right: 8px; }
+.status-bar { display:flex; gap:10px; align-items:center; margin-bottom: 10px; }
+.status-toggle { display:inline-flex; align-items:center; gap:8px; }
+.status-toggle input { width:auto; }
+@media (max-width: 900px) {
+    .stats-grid, .form-grid { grid-template-columns: 1fr 1fr; }
+    .app-shell { flex-direction:column; }
+    .sidebar { width:100%; }
+}
+@media (max-width: 700px) {
+    .stats-grid, .form-grid { grid-template-columns: 1fr; }
+    .content { padding: 16px; }
+    .topbar { flex-direction:column; align-items:flex-start; gap:10px; }
+}
+
+
+.tracking-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+.tracking-card {
+    border: 1px solid #dbe4ef;
+    border-radius: 12px;
+    padding: 14px;
+    background: #fff;
+}
+.tracking-card h3 { margin: 0 0 8px; font-size: 16px; }
+.tracking-card p { margin: 4px 0; }
+.tracking-metric { font-weight: 700; }
+
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #007bff;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+}
+
+.autocomplete-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover {
+    background-color: #f0f7ff;
+    color: #007bff;
+}
+
+.autocomplete-loading {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #888;
+    text-align: center;
+}
+
+/* ===================================================
+   Address Autocomplete Dropdown Styles (Clean & Clear)
+   =================================================== */
+.autocomplete-dropdown {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: #ffffff !important;
+    border: 2px solid #007bff !important;
+    border-radius: 6px !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2) !important;
+    z-index: 99999 !important;
+    max-height: 280px !important;
+    overflow-y: auto !important;
+    display: none;
+    margin-top: 4px !important;
+    padding: 0 !important;
+}
+
+.autocomplete-item {
+    padding: 12px 15px !important;
+    cursor: pointer !important;
+    border-bottom: 1px solid #e9ecef !important;
+    transition: background-color 0.2s ease !important;
+    text-align: left !important;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none !important;
+}
+
+.autocomplete-item:hover {
+    background-color: #e8f4ff !important;
+}
+
+.autocomplete-title {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: #1d2124 !important;
+    margin-bottom: 4px !important;
+    display: block !important;
+}
+
+.autocomplete-sub {
+    font-size: 12px !important;
+    color: #6c757d !important;
+    line-height: 1.4 !important;
+    display: block !important;
+    word-break: break-word !important;
+}
+
+.autocomplete-loading {
+    padding: 14px !important;
+    font-size: 13px !important;
+    color: #495057 !important;
+    text-align: center !important;
+    background-color: #f8f9fa !important;
+}
+
+/* ===================================================
+   Address Autocomplete Dropdown Styles (Clean & Clear)
+   =================================================== */
+.autocomplete-dropdown {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: #ffffff !important;
+    border: 2px solid #007bff !important;
+    border-radius: 6px !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2) !important;
+    z-index: 99999 !important;
+    max-height: 280px !important;
+    overflow-y: auto !important;
+    display: none;
+    margin-top: 4px !important;
+    padding: 0 !important;
+}
+
+.autocomplete-item {
+    padding: 12px 15px !important;
+    cursor: pointer !important;
+    border-bottom: 1px solid #e9ecef !important;
+    transition: background-color 0.2s ease !important;
+    text-align: left !important;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none !important;
+}
+
+.autocomplete-item:hover {
+    background-color: #e8f4ff !important;
+}
+
+.autocomplete-title {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: #1d2124 !important;
+    margin-bottom: 4px !important;
+    display: block !important;
+}
+
+.autocomplete-sub {
+    font-size: 12px !important;
+    color: #6c757d !important;
+    line-height: 1.4 !important;
+    display: block !important;
+    word-break: break-word !important;
+}
+
+.autocomplete-loading {
+    padding: 14px !important;
+    font-size: 13px !important;
+    color: #495057 !important;
+    text-align: center !important;
+    background-color: #f8f9fa !important;
+}
+
+/* 定位按钮样式 */
+.btn-locate {
+    background-color: #28a745 !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 8px 14px !important;
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.btn-locate:hover {
+    background-color: #218838 !important;
+}
+
+.btn-locate:disabled {
+    background-color: #6c757d !important;
+    cursor: not-allowed !important;
+}
+/* ==========================================
+   COURIERFLOW PREMIUM SIDEBAR
+========================================== */
+
+.courier-sidebar {
+    background: linear-gradient(
+        180deg,
+        #071d3b 0%,
+        #092a50 55%,
+        #06162c 100%
+    ) !important;
+
+    color: #ffffff;
+    padding: 24px 14px;
+}
+
+/* CourierFlow Logo */
+.courier-brand {
+    padding: 10px 8px 28px;
+}
+
+.courier-brand h2 {
+    color: #ffffff;
+    font-size: 23px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.courier-brand h2 i {
+    color: #38bdf8;
+    font-size: 28px;
+}
+
+.courier-brand h2 span {
+    color: #38bdf8;
+}
+
+.courier-brand p {
+    color: #a9c4e5;
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+/* Navigation */
+.courier-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.courier-nav .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    padding: 13px 16px;
+    border-radius: 10px;
+
+    color: #dbeafe;
+    font-size: 14px;
+    font-weight: 600;
+
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+/* Icons */
+.courier-nav .nav-link i {
+    font-size: 18px;
+    width: 22px;
+    text-align: center;
+}
+
+/* Hover effect */
+.courier-nav .nav-link:hover {
+    background: rgba(59, 130, 246, 0.20);
+    color: #ffffff;
+}
+
+/* Active page */
+.courier-nav .nav-link.active {
+    background: linear-gradient(
+        90deg,
+        #2563eb,
+        #3b82f6
+    ) !important;
+
+    color: #ffffff !important;
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.30);
+}
+/* ==========================================
+   COURIERFLOW PREMIUM ADMIN HEADER
+========================================== */
+
+.topbar {
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.topbar h1 {
+    color: #0b2c5d;
+    font-size: 26px;
+    font-weight: 800;
+    margin: 0 0 6px;
+}
+
+.topbar p {
+    color: #64748b;
+    font-size: 14px;
+    margin: 0;
+}
+
+.topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.status-pill {
+    background: #dbeafe;
+    color: #1d4ed8;
+    padding: 9px 18px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 1px solid #bfdbfe;
+}
+
+@media (max-width: 768px) {
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 18px;
+    }
+}
+/* ==========================================
+   COURIERFLOW SIDEBAR LOGO IMPROVEMENTS
+========================================== */
+
+.courier-brand {
+    padding: 20px 12px 32px !important;
+}
+
+.courier-brand h2 {
+    font-size: 25px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+}
+
+.courier-brand h2 i {
+    font-size: 32px !important;
+    color: #38bdf8 !important;
+}
+
+.courier-brand h2 span {
+    color: #38bdf8 !important;
+}
+
+.courier-brand p {
+    color: #b6cce6 !important;
+    font-size: 12px !important;
+    margin-top: 8px !important;
+}
+
+/* More spacing between navigation links */
+.courier-nav {
+    gap: 10px !important;
+}
+
+.courier-nav .nav-link {
+    padding: 14px 16px !important;
+    font-size: 14px !important;
+}
+/* ==========================================
+   COURIERFLOW BACKGROUND FOR ALL PAGES
+========================================== */
+
+/* Delivery truck and GPS background */
+body {
+    background-image: url('../images/courierflow-bg.png') !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+}
+
+/* Allow the background image to show */
+.app-shell {
+    background: transparent !important;
+}
+
+/* Main page content */
+.app-shell > .content {
+    background: rgba(255, 255, 255, 0.88) !important;
+    border: 1px solid rgba(255, 255, 255, 0.9) !important;
+    border-radius: 20px !important;
+    margin: 20px !important;
+    padding: 20px !important;
+    box-shadow: 0 12px 35px rgba(15, 23, 42, 0.12) !important;
+}
+
+/* Admin Console header */
+.app-shell > .content > .topbar {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 8px 12px 20px !important;
+}
+
+/* Keep dashboard cards white */
+.app-shell > .content .panel.card {
+    background: rgba(255, 255, 255, 0.97) !important;
+    border-radius: 16px !important;
+    border: 1px solid #e0edff !important;
+    box-shadow: 0 8px 25px rgba(15, 23, 42, 0.06);
+}
+/* =====================================
+   COURIERFLOW LOGIN PAGE DESIGN
+===================================== */
+
+body.auth-page {
+    background-image: url('../images/courierflow-bg.png') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+}
+/* =====================================
+   COURIERFLOW MODERN LOGIN CARD
+===================================== */
+
+.auth-card {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    border-radius: 22px !important;
+    padding: 35px !important;
+    box-shadow: 0 15px 45px rgba(15, 45, 90, 0.20) !important;
+    backdrop-filter: blur(12px);
+}
+
+/* Smooth hover effect */
+.auth-card:hover {
+    box-shadow: 0 20px 55px rgba(15, 45, 90, 0.25) !important;
+}
+/* =====================================
+   COURIERFLOW LOGIN FORM DESIGN
+===================================== */
+
+/* Email and password fields */
+.auth-card input[type="email"],
+.auth-card input[type="password"],
+.auth-card input[type="text"] {
+    width: 100%;
+    padding: 13px 15px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 12px !important;
+    background: #f8fbff !important;
+    font-size: 15px !important;
+    transition: all 0.3s ease;
+}
+
+/* Input field focus effect */
+.auth-card input:focus {
+    border-color: #2563eb !important;
+    outline: none !important;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
+}
+
+/* Modern login button */
+.auth-card button[type="submit"] {
+    width: 100%;
+    padding: 14px !important;
+    background: linear-gradient(135deg, #2563eb, #1e40af) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Login button hover effect */
+.auth-card button[type="submit"]:hover {
+    background: linear-gradient(135deg, #1d4ed8, #1e3a8a) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+}
+
+/* =====================================
+   COURIERFLOW LOGIN PAGE BRANDING
+===================================== */
+
+/* CourierFlow heading */
+.auth-card h1 {
+    font-size: 32px !important;
+    font-weight: 800 !important;
+    color: #123b79 !important;
+    text-align: center !important;
+    margin-bottom: 12px !important;
+    letter-spacing: 0.5px;
+}
+
+/* Welcome message */
+.auth-card h1 + p {
+    font-size: 14px !important;
+    color: #64748b !important;
+    text-align: center !important;
+    margin-bottom: 25px !important;
+    line-height: 1.6;
+}
