@@ -99,6 +99,19 @@ body {
         <h3>Pending Parcels</h3>
         <p><?= (int) $stats['pending'] ?></p>
     </div>
+    <!-- Total Parcels Card -->
+<div class="stat-card admin-stat-card">
+    <div class="admin-stat-icon">📦</div>
+    <h3>Total Parcels</h3>
+    <p><?= (int) $stats['parcels'] ?></p>
+</div>
+
+<!-- Delivered Parcels Card -->
+<div class="stat-card admin-stat-card">
+    <div class="admin-stat-icon">✅</div>
+    <h3>Delivered Parcels</h3>
+    <p><?= (int) $stats['delivered'] ?></p>
+</div>
 
 </div>
 <!-- Modern Admin Live Rider Tracking -->
@@ -424,6 +437,383 @@ body {
 
     .admin-activity-item {
         padding: 12px;
+    }
+}
+/* ======================================
+   COURIERFLOW MODERN STATISTICS CARDS
+====================================== */
+
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.admin-stat-card {
+    position: relative;
+    min-width: 0;
+    padding: 25px;
+    border-radius: 18px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+.admin-stat-card:nth-child(1) {
+    border-top: 5px solid #2563eb;
+}
+
+.admin-stat-card:nth-child(2) {
+    border-top: 5px solid #16a34a;
+}
+
+.admin-stat-card:nth-child(3) {
+    border-top: 5px solid #ef4444;
+}
+
+.admin-stat-card:nth-child(4) {
+    border-top: 5px solid #f59e0b;
+}
+
+.admin-stat-card:nth-child(5) {
+    border-top: 5px solid #7c3aed;
+}
+
+.admin-stat-card:nth-child(6) {
+    border-top: 5px solid #0891b2;
+}
+
+.admin-stat-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+
+.admin-stat-card h3 {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 10px;
+}
+
+.admin-stat-card p {
+    font-size: 34px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+/* Tablet */
+@media (max-width: 1100px) {
+    .admin-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    .admin-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-stat-card {
+        padding: 20px;
+    }
+}
+/* Modern Live Rider Tracking Section */
+
+.admin-map-panel {
+    margin-top: 25px;
+    margin-bottom: 25px;
+    padding: 28px;
+    background: #ffffff;
+    border: 1px solid #dbeafe;
+    border-radius: 20px;
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+}
+
+.admin-map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 22px;
+}
+
+.admin-map-header h2 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.admin-live-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #dcfce7;
+    color: #166534;
+    padding: 10px 16px;
+    border-radius: 30px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+#map.admin-modern-map {
+    width: 100%;
+    height: 500px !important;
+    min-height: 500px !important;
+    border: 2px solid #dbeafe;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .admin-map-panel {
+        padding: 16px;
+    }
+
+    .admin-map-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .admin-map-header h2 {
+        font-size: 20px;
+    }
+
+    #map.admin-modern-map {
+        height: 320px !important;
+        min-height: 320px !important;
+    }
+}
+/* Modern Live Rider Tracking Section */
+
+.admin-map-panel {
+    margin-top: 25px;
+    margin-bottom: 25px;
+    padding: 28px;
+    background: #ffffff;
+    border: 1px solid #dbeafe;
+    border-radius: 20px;
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+}
+
+.admin-map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 22px;
+}
+
+.admin-map-header h2 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.admin-live-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #dcfce7;
+    color: #166534;
+    padding: 10px 16px;
+    border-radius: 30px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+#map.admin-modern-map {
+    width: 100%;
+    height: 500px !important;
+    min-height: 500px !important;
+    border: 2px solid #dbeafe;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .admin-map-panel {
+        padding: 16px;
+    }
+
+    .admin-map-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .admin-map-header h2 {
+        font-size: 20px;
+    }
+
+    #map.admin-modern-map {
+        height: 320px !important;
+        min-height: 320px !important;
+    }
+}
+/* ======================================
+   COURIERFLOW RECENT PARCELS TABLE
+====================================== */
+
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 16px;
+}
+
+.admin-modern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.admin-modern-table thead {
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+}
+
+.admin-modern-table th {
+    padding: 18px 16px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.admin-modern-table td {
+    padding: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+    font-size: 13px;
+}
+
+.admin-modern-table tbody tr {
+    transition: background 0.2s ease;
+}
+
+.admin-modern-table tbody tr:hover {
+    background: #eff6ff;
+}
+
+.admin-modern-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-modern-table .badge {
+    display: inline-block;
+    padding: 7px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .admin-modern-table {
+        min-width: 650px;
+    }
+}
+/* ======================================
+   COURIERFLOW RECENT ACTIVITY DESIGN
+====================================== */
+
+.admin-activity-panel {
+    margin-top: 25px;
+    padding: 28px;
+    background: #ffffff;
+    border: 1px solid #dbeafe;
+    border-radius: 20px;
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.07);
+}
+
+.admin-activity-panel h2 {
+    color: #0f172a;
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.admin-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 22px;
+}
+
+.admin-activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 5px solid #2563eb;
+    border-radius: 14px;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.admin-activity-item:hover {
+    background: #eff6ff;
+    transform: translateX(4px);
+}
+
+.admin-activity-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    background: #dbeafe;
+    border-radius: 12px;
+    font-size: 22px;
+}
+
+.admin-activity-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-activity-content h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    color: #0f172a;
+}
+
+.admin-activity-action {
+    color: #2563eb;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.admin-activity-details {
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.admin-activity-content small {
+    color: #64748b;
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    .admin-activity-panel {
+        padding: 16px;
+    }
+
+    .admin-activity-item {
+        padding: 14px;
+        gap: 12px;
     }
 }
 </style>
