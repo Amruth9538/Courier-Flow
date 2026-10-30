@@ -20,3 +20,4 @@ rider-dashboard-backup.txt.php
 # Local database testing file
 check-db.php
 /install.php
+/api/status-backup.php
