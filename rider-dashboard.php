@@ -152,8 +152,9 @@ if ($waiting_parcel && !empty($waiting_parcel['customer_id'])) {
 
         $pdo->commit();
 
-        // Update current rider information
-        $rider['is_online'] = $next_status;
+// Prevent the browser from submitting the toggle form again on refresh
+header('Location: rider-dashboard.php');
+exit;
 
         $message = $next_status
             ? 'You are now online.'
@@ -186,8 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $pdo->beginTransaction();
 
             $photo_path = null;
-            if (isset($_FILES['delivery_photo']) && $_FILES['delivery_p
-            hoto']['error'] === UPLOAD_ERR_OK) {
+            if (isset($_FILES['delivery_photo']) && $_FILES['delivery_photo']['error'] === UPLOAD_ERR_OK) {
                 $upload_dir = __DIR__ . '/uploads/proofs/';
                 if (!is_dir($upload_dir)) {
                     mkdir($upload_dir, 0777, true);
@@ -507,7 +507,7 @@ body {
 .main-content .stat-card h3 {
     font-size: 16px !important;
     font-weight: 600 !important;
-    color: #334155 !important;
+    color: #cbd5e1 !important;
     margin-bottom: 14px !important;
 }
 
@@ -515,7 +515,7 @@ body {
 .main-content .stat-card p {
     font-size: 34px !important;
     font-weight: 800 !important;
-    color: #1d4ed8 !important;
+    color: #67e8f9 !important;
     margin: 0 !important;
 }
 
@@ -653,35 +653,49 @@ body {
 </style>
 
 <div class="main-content">
-    <style>
-.main-content {
-    background:
-    radial-gradient(circle at top right, rgba(0, 217, 255, 0.12), transparent 40%),
-    linear-gradient(135deg, #071426, #10243d) !important;
-    border: 1px solid rgba(0, 217, 255, 0.35) !important;
-box-shadow:
-    0 0 30px rgba(0, 217, 255, 0.12),
-    inset 0 0 25px rgba(0, 217, 255, 0.04) !important;
-    border-radius: 25px !important;
-    padding: 25px !important;
+
+    <!-- Rider Dashboard Statistics -->
+     <style>
+/* Professional Rider Statistics */
+.rider-app-shell .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
 }
 
-.main-content .stat-card {
-    background: #102a43 !important;
-    color: white !important;
-    border: 2px solid #00d9ff !important;
-    border-radius: 20px !important;
+.rider-app-shell .stat-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    padding: 22px !important;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05) !important;
+    transition: transform 0.2s ease;
 }
 
-.main-content .stat-card h3 {
-    color: #ffffff !important;
+.rider-app-shell .stat-card:hover {
+    transform: translateY(-3px);
 }
 
-.main-content .stat-card p {
-    color: #00d9ff !important;
+.rider-app-shell .stat-card h3 {
+    color: #64748b !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+}
+
+.rider-app-shell .stat-card p {
+    color: #2563eb !important;
+    font-size: 30px !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+}
+
+@media (max-width: 768px) {
+    .rider-app-shell .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 </style>
-    <!-- Rider Dashboard Statistics -->
 <div class="stats-grid">
 
     <div class="stat-card">
@@ -722,17 +736,17 @@ box-shadow:
     gap: 20px;
     padding: 25px;
     border-radius: 15px;
-    background: linear-gradient(135deg, #ffffff, #eef6ff);
-    border: 1px solid #dbeafe;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    background: #ffffff;
+border: 1px solid #e2e8f0;
+box-shadow: 0 4px 15px rgba(15, 23, 42, 0.06);
 ">
 
     <div>
-        <h2 style="margin: 0 0 10px; color: #0f172a;">
-            🚴 Rider Availability
-        </h2>
+        <h2 style="margin: 0 0 10px; color: #0f172a; font-size: 22px; font-weight: 700;">
+    Rider Availability
+</h2>
 
-        <p style="margin: 0; color: #64748b;">
+        <p style="margin: 0; color: #475569; font-size: 15px;">
             Current Status:
             <strong style="
                 color: <?= !empty($rider['is_online']) ? '#20bd11' : '#f00606' ?>;
@@ -766,10 +780,16 @@ box-shadow:
         </button>
     </form>
 
-</div>>
+</div>
 
     <!-- Modern Rider Live Tracking Map -->
-<div class="panel rider-map-panel">
+<div class="panel rider-map-panel" style="
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+">
 
     <div class="rider-map-header">
         <div>
@@ -785,28 +805,47 @@ box-shadow:
         </span>
     </div>
 
-    <div id="rider-map" class="map rider-modern-map"></div>
+   <div id="rider-map" class="map rider-modern-map"></div>
 
-    <div id="rider-tracking-summary"
-         class="tracking-summary"
-         aria-live="polite">
-    </div>
+<div id="rider-tracking-summary"
+     class="tracking-summary"
+     aria-live="polite">
+</div>
 
 </div>
 
     <!-- 配送任务列表卡片 -->
-    <div class="panel card delivery-mission-panel">
-        <h2 class="card-title" style="font-size: 18px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 20px;">My Assigned Deliveries</h2>
+    <div class="panel card delivery-mission-panel" style="
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+">
+
+<h2 style="
+    color: #0f172a !important;
+    font-size: 26px !important;
+    font-weight: 800 !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+    margin-bottom: 20px;
+">
+    My Assigned Deliveries
+</h2>
+
         <table class="data-table modern-delivery-table">
-            <thead>
-                <tr>
-                    <th>Tracking #</th>
-                    <th>Recipient</th>
-                    <th>Delivery Address</th>
-                    <th>Status</th>
-                    <th style="text-align: center;">Action</th>
-                </tr>
-            </thead>
+            
+<thead>
+    <tr>
+        <th style="width: 18%; text-align: left;">Tracking #</th>
+        <th style="width: 18%; text-align: left;">Recipient</th>
+        <th style="width: 30%; text-align: left;">Delivery Address</th>
+        <th style="width: 14%; text-align: center;">Status</th>
+        <th style="width: 20%; text-align: center;">Action</th>
+    </tr>
+</thead>
+
             <tbody>
                 <?php if (empty($assigned_parcels)): ?>
                     <tr>
@@ -887,6 +926,7 @@ box-shadow:
         </form>
     </div>
 </div>
+<style>
 /* ======================================
    COURIERFLOW 2030 RIDER STATUS
 ====================================== */
@@ -960,8 +1000,6 @@ box-shadow:
     }
 }
 
-<style>
-    <style>
 /* ==========================================
    COURIERFLOW 2030 — RIDER COMMAND CENTER
 ========================================== */
@@ -1171,7 +1209,6 @@ body {
     overflow-x: auto;
 }
 
-</style>
 /* Modern Rider Delivery Table */
 
 .modern-delivery-table {
@@ -1229,6 +1266,7 @@ body {
         white-space: nowrap;
     }
 }
+
 /* Modern Rider Tracking Map */
 
 .rider-map-panel {
@@ -1293,7 +1331,9 @@ body {
         font-size: 17px;
     }
 }
+
 </style>
+
 <script src="assets/js/rider-tracking.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -1330,8 +1370,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 /* Rider availability section */
 .main-content .rider-availability-card {
-    background: rgba(255, 255, 255, 0.97) !important;
-    border: 1px solid #dbeafe !important;
+    background: linear-gradient(145deg, #122945, #071426) !important;
+    border: 1px solid rgba(0, 229, 255, 0.45) !important;
     border-radius: 18px !important;
     padding: 25px !important;
     margin-bottom: 25px !important;
@@ -1381,5 +1421,570 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 }
 </style>
+<style>
+/* =========================================
+   COURIERFLOW 2040+ FUTURISTIC RIDER UI
+========================================= */
 
+/* Futuristic background */
+body {
+    background:
+        radial-gradient(circle at 15% 15%, rgba(0, 240, 255, 0.13), transparent 35%),
+        radial-gradient(circle at 85% 80%, rgba(124, 58, 237, 0.18), transparent 40%),
+        #050b18 !important;
+    background-attachment: fixed !important;
+    color: #e2e8f0;
+}
+
+/* Main dashboard */
+.app-shell > .content,
+.main-content {
+    background: rgba(7, 18, 38, 0.94) !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 0 35px rgba(0, 240, 255, 0.08) !important;
+}
+
+/* Statistics layout */
+.main-content .stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 20px !important;
+}
+
+/* Holographic statistics cards */
+
+/* Rider availability */
+.main-content .rider-availability-card {
+    background: linear-gradient(135deg, #102541, #071426) !important;
+    border: 1px solid rgba(34, 211, 238, 0.45) !important;
+    border-radius: 22px !important;
+    box-shadow: 0 0 25px rgba(34, 211, 238, 0.1) !important;
+}
+
+.main-content .rider-availability-card h2 {
+    color: #67e8f9 !important;
+}
+
+.main-content .rider-availability-card p {
+    color: #cbd5e1 !important;
+}
+
+/* GPS navigation panel */
+.main-content .rider-map-panel {
+    background: linear-gradient(135deg, #102541, #071426) !important;
+    border: 1px solid rgba(34, 211, 238, 0.45) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 0 30px rgba(34, 211, 238, 0.12) !important;
+}
+
+.main-content .rider-map-header h2 {
+    color: #67e8f9 !important;
+}
+
+.main-content .rider-map-header p {
+    color: #94a3b8 !important;
+}
+
+.main-content #rider-map {
+    border: 2px solid #22d3ee !important;
+    border-radius: 18px !important;
+    box-shadow: 0 0 25px rgba(34, 211, 238, 0.2) !important;
+}
+
+/* Delivery mission panel */
+.main-content .delivery-mission-panel {
+    background: linear-gradient(135deg, #102541, #071426) !important;
+    border: 1px solid rgba(34, 211, 238, 0.45) !important;
+    border-radius: 24px !important;
+}
+
+.main-content .delivery-mission-panel .card-title {
+    color: #67e8f9 !important;
+}
+
+/* Futuristic delivery table */
+.main-content .modern-delivery-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #0b1c32 !important;
+}
+
+.main-content .modern-delivery-table th {
+    background: #112d4e !important;
+    color: #67e8f9 !important;
+    padding: 18px !important;
+}
+
+.main-content .modern-delivery-table td {
+    background: #0b1c32 !important;
+    color: #e2e8f0 !important;
+    padding: 16px !important;
+    border-bottom: 1px solid rgba(34, 211, 238, 0.15);
+}
+
+.main-content .modern-delivery-table td strong,
+.main-content .modern-delivery-table td small {
+    color: #e2e8f0 !important;
+}
+
+.main-content .modern-delivery-table tbody tr:hover td {
+    background: #153453 !important;
+}
+
+/* Update status button */
+.main-content .btn-update-status {
+    background: linear-gradient(135deg, #06b6d4, #2563eb) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 12px 18px !important;
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+    .main-content .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .main-content .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+/* ======================================
+   COURIERFLOW 2040+ COLOUR FIX
+====================================== */
+
+/* Rider availability panel */
+.main-content .panel.rider-availability-card {
+    background: linear-gradient(135deg, #102541, #071426) !important;
+    border: 1px solid #22d3ee !important;
+    color: #e2e8f0 !important;
+}
+
+/* Rider availability text */
+.main-content .rider-availability-card h2 {
+    color: #67e8f9 !important;
+}
+
+.main-content .rider-availability-card p {
+    color: #cbd5e1 !important;
+}
+
+/* GPS panel */
+.main-content .panel.rider-map-panel {
+    background: linear-gradient(135deg, #102541, #071426) !important;
+    border: 1px solid #22d3ee !important;
+}
+
+/* GPS summary */
+.main-content #rider-tracking-summary {
+    background: #0b1c32 !important;
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(34, 211, 238, 0.3) !important;
+}
+
+/* Delivery panel */
+.main-content .panel.delivery-mission-panel {
+    background: linear-gradient(135deg, #102541, #071426) !important;
+    border: 1px solid #22d3ee !important;
+}
+
+/* Delivery table */
+.main-content .delivery-mission-panel table,
+.main-content .delivery-mission-panel thead,
+.main-content .delivery-mission-panel tbody {
+    background: #0b1c32 !important;
+}
+
+/* Delivery table text */
+.main-content .delivery-mission-panel td,
+.main-content .delivery-mission-panel td strong,
+.main-content .delivery-mission-panel td small {
+    color: #e2e8f0 !important;
+}
+
+/* Status badges */
+.main-content .modern-delivery-table .badge {
+    padding: 7px 12px !important;
+    border-radius: 20px !important;
+    font-weight: 700 !important;
+}
+
+.main-content .modern-delivery-table .badge-pending {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+}
+
+.main-content .modern-delivery-table .badge-in_transit {
+    background: #dbeafe !important;
+    color: #1d4ed8 !important;
+}
+
+.main-content .modern-delivery-table .badge-delivered {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+}
+
+.main-content .modern-delivery-table .badge-cancelled {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+}
+</style>
+
+<style>
+/* =====================================
+   MODERN PROFESSIONAL RIDER DASHBOARD
+===================================== */
+
+body {
+    outline: none !important;
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+.rider-app-shell {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+.rider-app-shell .content,
+.rider-app-shell .main-content {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+.rider-app-shell .main-content {
+    padding: 28px !important;
+}
+
+/* Headings */
+.rider-app-shell h1,
+.rider-app-shell h2,
+.rider-app-shell h3 {
+    color: #0f172a !important;
+}
+
+/* Dashboard cards */
+.rider-app-shell .stat-card,
+.rider-app-shell .availability-card,
+.rider-app-shell .modern-delivery-table,
+.rider-app-shell .map-card,
+.rider-app-shell .tracking-card {
+    background: #ffffff !important;
+    color: #334155 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Stat card text */
+.rider-app-shell .stat-card h2,
+.rider-app-shell .stat-card h3,
+.rider-app-shell .stat-card p {
+    color: #334155 !important;
+}
+
+/* Table */
+.rider-app-shell .modern-delivery-table {
+    width: 100% !important;
+    overflow-x: auto !important;
+}
+
+.rider-app-shell .modern-delivery-table th {
+    background: #eff6ff !important;
+    color: #1e40af !important;
+}
+
+.rider-app-shell .modern-delivery-table td {
+    background: #ffffff !important;
+    color: #334155 !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* Buttons */
+.rider-app-shell button,
+.rider-app-shell .btn-update-status {
+    border-radius: 9px !important;
+    transition: 0.2s ease !important;
+}
+
+.rider-app-shell .btn-update-status {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 9px 15px !important;
+}
+
+.rider-app-shell .btn-update-status:hover {
+    background: #1d4ed8 !important;
+}
+
+/* Inputs */
+.rider-app-shell input,
+.rider-app-shell select,
+.rider-app-shell textarea {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    color: #1e293b !important;
+}
+
+/* Map */
+.rider-app-shell #rider-map {
+    border-radius: 14px !important;
+    overflow: hidden !important;
+}
+
+/* Mobile layout */
+@media (max-width: 768px) {
+    .rider-app-shell .main-content {
+        padding: 15px !important;
+    }
+
+    .rider-app-shell .modern-delivery-table {
+        display: block !important;
+        overflow-x: auto !important;
+    }
+}
+
+/* READABILITY FIX */
+.rider-app-shell,
+.rider-app-shell .main-content {
+    color: #1e293b !important;
+}
+
+.rider-app-shell p,
+.rider-app-shell span,
+.rider-app-shell label,
+.rider-app-shell td,
+.rider-app-shell li {
+    color: #334155 !important;
+    opacity: 1 !important;
+}
+
+.rider-app-shell h1,
+.rider-app-shell h2,
+.rider-app-shell h3,
+.rider-app-shell th {
+    color: #0f172a !important;
+    opacity: 1 !important;
+}
+
+.rider-app-shell input,
+.rider-app-shell select,
+.rider-app-shell textarea {
+    color: #1e293b !important;
+    font-size: 15px !important;
+}
+
+.rider-app-shell button {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+/* RIDER CONSOLE - CLEAR TEXT AND BACKGROUND */
+
+.rider-app-shell {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+.rider-app-shell .content,
+.rider-app-shell .main-content {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+.rider-app-shell .main-content * {
+    text-shadow: none !important;
+}
+
+.rider-app-shell .main-content h1,
+.rider-app-shell .main-content h2,
+.rider-app-shell .main-content h3,
+.rider-app-shell .main-content h4 {
+    color: #0f172a !important;
+}
+
+.rider-app-shell .main-content p,
+.rider-app-shell .main-content label,
+.rider-app-shell .main-content td,
+.rider-app-shell .main-content th,
+.rider-app-shell .main-content span {
+    color: #334155 !important;
+    opacity: 1 !important;
+}
+
+.rider-app-shell .main-content .stat-card,
+.rider-app-shell .main-content .panel,
+.rider-app-shell .main-content .tracking-card {
+    background: #ffffff !important;
+    color: #1e293b !important;
+}
+
+.rider-app-shell .main-content input,
+.rider-app-shell .main-content select,
+.rider-app-shell .main-content textarea {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #94a3b8 !important;
+}
+
+.rider-app-shell .sidebar {
+    background: #0f172a !important;
+    color: #ffffff !important;
+}
+
+.rider-app-shell .sidebar span,
+.rider-app-shell .sidebar a {
+    color: #e2e8f0 !important;
+}
+/* Clear and readable delivery table */
+.rider-app-shell .modern-delivery-table {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+}
+
+.rider-app-shell .modern-delivery-table th {
+    background: #eff6ff !important;
+    color: #1e3a8a !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    padding: 15px !important;
+    opacity: 1 !important;
+}
+
+.rider-app-shell .modern-delivery-table td {
+    background: #ffffff !important;
+    color: #334155 !important;
+    font-size: 14px !important;
+    padding: 15px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    opacity: 1 !important;
+}
+
+.rider-app-shell .modern-delivery-table tr:hover td {
+    background: #f8fafc !important;
+}
+
+.rider-app-shell .modern-delivery-table button {
+    color: #ffffff !important;
+    background: #2563eb !important;
+    font-weight: 600 !important;
+}
+
+/* Fix Assigned Deliveries text visibility */
+.rider-app-shell .modern-delivery-table {
+    width: 100% !important;
+    background: #ffffff !important;
+    border-collapse: collapse !important;
+}
+
+.rider-app-shell .modern-delivery-table th {
+    background: #eff6ff !important;
+    color: #1e3a8a !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    padding: 15px !important;
+    opacity: 1 !important;
+}
+
+.rider-app-shell .modern-delivery-table td {
+    background: #ffffff !important;
+    color: #334155 !important;
+    font-size: 14px !important;
+    padding: 15px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    opacity: 1 !important;
+}
+
+.rider-app-shell .modern-delivery-table tr:hover td {
+    background: #f8fafc !important;
+}
+
+/* Improve delivery table word visibility */
+.rider-app-shell .modern-delivery-table {
+    table-layout: fixed !important;
+    width: 100% !important;
+}
+
+.rider-app-shell .modern-delivery-table th,
+.rider-app-shell .modern-delivery-table td {
+    white-space: normal !important;
+    overflow: visible !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+    line-height: 1.6 !important;
+    vertical-align: middle !important;
+    min-height: 45px;
+}
+
+.rider-app-shell .modern-delivery-table td {
+    color: #1e293b !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+
+/* Make delivery information clearly visible */
+.rider-app-shell .modern-delivery-table tbody td {
+    color: #1e293b !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    font-size: 14px !important;
+}
+
+.rider-app-shell .modern-delivery-table tbody td strong {
+    color: #0f172a !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    font-weight: 700 !important;
+}
+
+.rider-app-shell .modern-delivery-table tbody td small {
+    color: #475569 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    font-size: 13px !important;
+}
+
+.rider-app-shell .modern-delivery-table tbody td:nth-child(3) {
+    color: #334155 !important;
+    font-size: 14px !important;
+}
+
+/* Strong readability for Rider Delivery Table */
+.rider-app-shell .modern-delivery-table,
+.rider-app-shell .modern-delivery-table th,
+.rider-app-shell .modern-delivery-table td,
+.rider-app-shell .modern-delivery-table td span,
+.rider-app-shell .modern-delivery-table td strong,
+.rider-app-shell .modern-delivery-table td small {
+    color: #0f172a !important;
+    text-shadow: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+
+.rider-app-shell .modern-delivery-table th {
+    background: #dbeafe !important;
+}
+
+.rider-app-shell .modern-delivery-table td {
+    background: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+</style>
+</style>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
+
+
+

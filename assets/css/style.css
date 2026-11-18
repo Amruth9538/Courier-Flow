@@ -603,3 +603,309 @@ body.auth-page {
     margin-bottom: 25px !important;
     line-height: 1.6;
 }
+
+/* RIDER CONSOLE BACKGROUND FIX */
+.rider-app-shell {
+    background: #081525 !important;
+    min-height: 100vh !important;
+}
+
+.rider-app-shell .content {
+    background: transparent !important;
+}
+
+.rider-app-shell .main-content {
+    background: transparent !important;
+    color: #e6f4ff !important;
+}
+
+/* =========================================
+   COURIERFLOW - MODERN PROFESSIONAL RIDER UI
+========================================= */
+
+.rider-app-shell {
+    background: #f3f6fb !important;
+    min-height: 100vh;
+}
+
+.rider-app-shell .content {
+    background: #f3f6fb !important;
+}
+
+.rider-app-shell .sidebar {
+    background: #ffffff !important;
+    border-right: 1px solid #e5eaf2 !important;
+    box-shadow: 3px 0 15px rgba(15, 23, 42, 0.05);
+}
+
+.rider-app-shell .courier-brand h2 {
+    color: #173b70 !important;
+}
+
+.rider-app-shell .courier-brand p {
+    color: #718096 !important;
+}
+
+.rider-app-shell .courier-nav .nav-link {
+    color: #475569 !important;
+    border-radius: 10px;
+    margin: 5px 12px;
+}
+
+.rider-app-shell .courier-nav .nav-link:hover,
+.rider-app-shell .courier-nav .nav-link.active {
+    background: #eaf2ff !important;
+    color: #2563eb !important;
+    box-shadow: inset 3px 0 #2563eb;
+}
+
+.rider-app-shell .topbar {
+    background: #ffffff !important;
+    border: 1px solid #e5eaf2 !important;
+    border-radius: 14px;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+.rider-app-shell .topbar h1 {
+    color: #172b4d !important;
+}
+
+.rider-app-shell .topbar p {
+    color: #718096 !important;
+}
+
+.rider-app-shell .main-content {
+    background: #f3f6fb !important;
+    color: #334155 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.rider-app-shell .main-content .stat-card {
+    background: #ffffff !important;
+    color: #334155 !important;
+    border: 1px solid #e5eaf2 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05) !important;
+}
+
+.rider-app-shell .main-content .stat-card h3 {
+    color: #64748b !important;
+}
+
+.rider-app-shell .main-content .stat-card p {
+    color: #2563eb !important;
+}
+
+.rider-app-shell .main-content .rider-availability-card {
+    background: #ffffff !important;
+    border: 1px solid #e5eaf2 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05) !important;
+}
+
+.rider-app-shell .main-content .rider-availability-card h2 {
+    color: #173b70 !important;
+}
+
+.rider-app-shell .main-content .rider-availability-card p {
+    color: #64748b !important;
+}
+
+.rider-app-shell .main-content .rider-map-panel,
+.rider-app-shell .main-content .delivery-mission-panel {
+    background: #ffffff !important;
+    border: 1px solid #e5eaf2 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05) !important;
+}
+
+.rider-app-shell .main-content .rider-map-header h2 {
+    color: #173b70 !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table {
+    background: #ffffff !important;
+    color: #334155 !important;
+    border-radius: 12px;
+}
+
+/* MODERN RIDER STATISTICS CARDS */
+
+.rider-app-shell .main-content .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.rider-app-shell .main-content .stat-card {
+    background: #ffffff !important;
+    border: 1px solid #e5eaf2 !important;
+    border-radius: 16px !important;
+    padding: 25px !important;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, 0.06) !important;
+    text-align: left !important;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.rider-app-shell .main-content .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.10) !important;
+}
+
+.rider-app-shell .main-content .stat-card h3 {
+    color: #64748b !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+.rider-app-shell .main-content .stat-card p {
+    color: #2563eb !important;
+    font-size: 34px !important;
+    font-weight: 800 !important;
+    margin: 0 !important;
+}
+
+@media (max-width: 1000px) {
+    .rider-app-shell .main-content .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .rider-app-shell .main-content .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* MODERN RIDER AVAILABILITY PANEL */
+
+.rider-app-shell .main-content .rider-availability-card {
+    background: #ffffff !important;
+    border: 1px solid #e5eaf2 !important;
+    border-radius: 16px !important;
+    padding: 25px !important;
+    margin-bottom: 25px !important;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, 0.06) !important;
+}
+
+.rider-app-shell .main-content .rider-availability-card h2 {
+    color: #173b70 !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+}
+
+.rider-app-shell .main-content .rider-availability-card p {
+    color: #64748b !important;
+}
+
+.rider-app-shell .main-content .rider-availability-card button[type="submit"] {
+    border-radius: 10px !important;
+    padding: 13px 25px !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+    transition: transform 0.2s ease;
+}
+
+.rider-app-shell .main-content .rider-availability-card button[type="submit"]:hover {
+    transform: translateY(-2px);
+}
+
+/* MODERN GPS TRACKING PANEL */
+
+.rider-app-shell .main-content .rider-map-panel {
+    background: #ffffff !important;
+    border: 1px solid #e5eaf2 !important;
+    border-radius: 18px !important;
+    padding: 25px !important;
+    margin: 25px 0 !important;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, 0.06) !important;
+}
+
+.rider-app-shell .main-content .rider-map-header h2 {
+    color: #173b70 !important;
+    font-size: 21px !important;
+    font-weight: 700 !important;
+}
+
+.rider-app-shell .main-content .rider-map-header p {
+    color: #64748b !important;
+}
+
+.rider-app-shell .main-content #rider-map {
+    border: 1px solid #dbe5f1 !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+    overflow: hidden;
+}
+/* MODERN DELIVERY TABLE */
+
+.rider-app-shell .main-content .modern-delivery-table {
+    width: 100%;
+    background: #ffffff !important;
+    border: 1px solid #e5eaf2 !important;
+    border-radius: 14px !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    overflow: hidden;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, 0.05) !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table th {
+    background: #eff5ff !important;
+    color: #173b70 !important;
+    font-weight: 700 !important;
+    padding: 16px !important;
+    border-bottom: 1px solid #dbe5f1 !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table td {
+    background: #ffffff !important;
+    color: #334155 !important;
+    padding: 15px !important;
+    border-bottom: 1px solid #edf1f7 !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table tr:hover td {
+    background: #f8fbff !important;
+}
+
+
+/* PROFESSIONAL DELIVERY STATUS BADGES */
+
+.rider-app-shell .main-content .badge-pending {
+    background: #fff7ed !important;
+    color: #c2410c !important;
+    border: 1px solid #fed7aa !important;
+    border-radius: 20px !important;
+    padding: 6px 12px !important;
+    font-weight: 700 !important;
+}
+
+.rider-app-shell .main-content .badge-in_transit {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border: 1px solid #bfdbfe !important;
+    border-radius: 20px !important;
+    padding: 6px 12px !important;
+    font-weight: 700 !important;
+}
+
+.rider-app-shell .main-content .badge-delivered {
+    background: #f0fdf4 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0 !important;
+    border-radius: 20px !important;
+    padding: 6px 12px !important;
+    font-weight: 700 !important;
+}
+
+.rider-app-shell .main-content .badge-cancelled {
+    background: #fef2f2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fecaca !important;
+    border-radius: 20px !important;
+    padding: 6px 12px !important;
+    font-weight: 700 !important;
+}

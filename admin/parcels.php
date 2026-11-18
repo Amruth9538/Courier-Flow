@@ -93,6 +93,9 @@ if ($error !== '') {
     } else {
     try {
 
+        // Start transaction before selecting a rider
+        $pdo->beginTransaction();
+
         // Automatically select an online and available rider
        // STEP 1: Find the nearest online and available rider using GPS
 
@@ -120,14 +123,17 @@ if ($recipient_latitude !== null && $recipient_longitude !== null) {
         FROM riders r
         JOIN users u ON r.user_id = u.id
 
-        WHERE r.is_online = 1
-          AND r.is_available = 1
-          AND u.role = 'rider'
+       WHERE r.is_online = 1
+  AND r.is_available = 1
+  AND r.approval_status = 'approved'
+  AND u.status = 'active'
+  AND u.role = 'rider'
           AND r.current_latitude IS NOT NULL
           AND r.current_longitude IS NOT NULL
 
         ORDER BY distance_km ASC
-        LIMIT 1
+LIMIT 1
+FOR UPDATE
     ");
 
     $assign_stmt->execute([
@@ -148,10 +154,13 @@ if (!$assigned_rider_id) {
         FROM riders r
         JOIN users u ON r.user_id = u.id
         WHERE r.is_online = 1
-          AND r.is_available = 1
-          AND u.role = 'rider'
+  AND r.is_available = 1
+  AND r.approval_status = 'approved'
+  AND u.status = 'active'
+  AND u.role = 'rider'
         ORDER BY r.id DESC
-        LIMIT 1
+LIMIT 1
+FOR UPDATE
     ");
 
     $fallback_stmt->execute();
@@ -208,9 +217,18 @@ if ($assigned_rider_id !== null &&
         UPDATE riders
         SET is_available = 0
         WHERE id = ?
+          AND is_online = 1
+          AND is_available = 1
+          AND approval_status = 'approved'
     ");
 
     $busy_stmt->execute([$assigned_rider_id]);
+
+    if ($busy_stmt->rowCount() !== 1) {
+        throw new RuntimeException(
+            'Rider availability changed. Please create the parcel again.'
+        );
+    }
 }
 // Create a notification for the registered customer
 if ($customer_id !== null && $customer_id !== false) {
@@ -238,38 +256,59 @@ if ($customer_id !== null && $customer_id !== false) {
         $notification_title,
         $notification_message
     ]);
-    // Notify customer when a rider is assigned
+    }
+
+// Notify the assigned rider
 if ($assigned_rider_id !== null) {
 
-    $rider_notification_title = 'Rider Assigned';
-
-    $rider_notification_message =
-        'Your parcel ' . $tracking_number .
-        ' has been assigned to a delivery rider.';
-
-    $rider_notification_stmt = $pdo->prepare("
-        INSERT INTO notifications (
-            user_id,
-            parcel_id,
-            title,
-            message,
-            is_read
-        )
-        VALUES (?, ?, ?, ?, 0)
+    // Get the rider's user ID
+    $rider_user_stmt = $pdo->prepare("
+        SELECT user_id
+        FROM riders
+        WHERE id = ?
     ");
 
-    $rider_notification_stmt->execute([
-        $customer_id,
-        $new_parcel_id,
-        $rider_notification_title,
-        $rider_notification_message
-    ]);
+    $rider_user_stmt->execute([$assigned_rider_id]);
+
+    $rider_user_id = $rider_user_stmt->fetchColumn();
+
+    if ($rider_user_id) {
+
+        $rider_notification_title = 'New Parcel Assigned';
+
+        $rider_notification_message =
+            'A new parcel ' . $tracking_number .
+            ' has been assigned to you.';
+
+        $rider_notification_stmt = $pdo->prepare("
+            INSERT INTO notifications (
+                user_id,
+                parcel_id,
+                title,
+                message,
+                is_read
+            )
+            VALUES (?, ?, ?, ?, 0)
+        ");
+
+        $rider_notification_stmt->execute([
+            $rider_user_id,
+            $new_parcel_id,
+            $rider_notification_title,
+            $rider_notification_message
+        ]);
+    }
 }
-}
+$pdo->commit();
             $_SESSION['parcel_success'] = 'Parcel created successfully! Tracking #: ' . $tracking_number;
 header('Location: parcels.php');
 exit;
         } catch (Throwable $e) {
+
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
     $error = 'Failed to create parcel: ' . $e->getMessage();
 }
     }

@@ -36,60 +36,27 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    const showRoute = async () => {
-        if (!parcelId) {
-            setSummary('<div class="tracking-card"><h3>Current location</h3><p>Your location is shown on the map. No active delivery is assigned yet.</p></div>');
-            return;
-        }
+    
+const showRoute = async () => {
+    if (!parcelId) {
+        setSummary(`
+            <div class="tracking-card">
+                <h3>Current Location</h3>
+                <p>Your live location will appear on the map.</p>
+                <p>No active delivery is assigned yet.</p>
+            </div>
+        `);
+    } else {
+        setSummary(`
+            <div class="tracking-card">
+                <h3>Live Delivery Tracking</h3>
+                <p>Your current GPS location is displayed on the map.</p>
+                <p>Road route calculation is disabled.</p>
+            </div>
+        `);
+    }
+};
 
-        const now = Date.now();
-        if (now - lastRouteRequest < 15000) return;
-        lastRouteRequest = now;
-
-        try {
-            const params = new URLSearchParams({
-                rider_id: riderId,
-                parcel_id: parcelId,
-                // Publish the route calculated from the latest saved GPS
-                // position. The admin dashboard reads this same snapshot.
-                refresh: '1'
-            });
-            const response = await fetch('api/route.php?' + params.toString(), { cache: 'no-store' });
-            const route = await response.json();
-            if (!route.success) throw new Error(route.message || 'Could not calculate the delivery route.');
-
-            routeLayer.clearLayers();
-            const coordinates = route.geometry?.coordinates || [];
-            const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
-            if (latLngs.length > 1) {
-                L.polyline(latLngs, { color: '#2563eb', weight: 5, opacity: 0.85 }).addTo(routeLayer);
-            }
-            if (route.end) {
-                if (destinationMarker) markerLayer.removeLayer(destinationMarker);
-                destinationMarker = L.marker([route.end.lat, route.end.lng])
-                    .setIcon(recipientIcon)
-                    .bindPopup('Recipient delivery address')
-                    .addTo(markerLayer);
-            }
-            const routeStart = route.start ? [route.start.lat, route.start.lng] : null;
-            if (routeStart) {
-                if (riderMarker) {
-                    riderMarker.setLatLng(routeStart);
-                } else {
-                    riderMarker = L.marker(routeStart, { icon: riderIcon })
-                        .bindPopup('Your current location')
-                        .addTo(markerLayer);
-                }
-            }
-            const bounds = routeStart ? L.latLngBounds([routeStart]) : L.latLngBounds();
-            latLngs.forEach(point => bounds.extend(point));
-            if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
-
-            setSummary(`<div class="tracking-card"><h3>Active delivery route</h3><p>Distance to recipient: <span class="tracking-metric">${route.distance_km ?? '—'} km</span></p><p>Estimated driving time: <span class="tracking-metric">${route.duration_min ?? '—'} min</span></p></div>`);
-        } catch (error) {
-            setSummary(`<div class="tracking-card"><h3>Route unavailable</h3><p>${error.message || 'Could not calculate the delivery route.'}</p></div>`);
-        }
-    };
 
     const updatePosition = async (position) => {
         const lat = position.coords.latitude;

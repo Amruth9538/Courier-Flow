@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
         $user->execute([$username, $fullName, $email, password_hash($password, PASSWORD_DEFAULT), $phone ?: null]);
         $userId = (int) $pdo->lastInsertId();
 
-        $rider = $pdo->prepare('INSERT INTO riders (user_id, vehicle_type, license_number, is_online, is_available) VALUES (?, ?, ?, 0, 1)');
+        $rider = $pdo->prepare("INSERT INTO riders (user_id, vehicle_type, license_number, is_online, is_available, approval_status) VALUES (?, ?, ?, 0, 1, 'approved')");
         $rider->execute([$userId, $vehicleType ?: null, $licenseNumber ?: null]);
         $pdo->prepare('INSERT INTO activity_logs (user_id, action, details) VALUES (?, ?, ?)')->execute([
             $_SESSION['user_id'],
@@ -82,76 +82,145 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
         $error = $e->getMessage();
     }
 }
+// Approve or Reject Rider Registration
+if ($_SERVER['REQUEST_METHOD'] === 'POST' &&
+    in_array($_POST['action'] ?? '', ['approve_rider', 'reject_rider'], true)) {
+
+    try {
+        verify_csrf();
+
+        $userId = (int) ($_POST['user_id'] ?? 0);
+        $action = $_POST['action'];
+
+        if ($userId <= 0) {
+            throw new RuntimeException('Invalid rider ID.');
+        }
+
+        $check = $pdo->prepare("
+            SELECT u.id, u.full_name
+            FROM users u
+            JOIN riders r ON r.user_id = u.id
+            WHERE u.id = ? AND u.role = 'rider'
+        ");
+        $check->execute([$userId]);
+        $rider = $check->fetch();
+
+        if (!$rider) {
+            throw new RuntimeException('Rider not found.');
+        }
+
+        $pdo->beginTransaction();
+
+        if ($action === 'approve_rider') {
+            $pdo->prepare("
+                UPDATE riders
+SET approval_status = 'approved',
+    is_available = 1
+WHERE user_id = ?
+            ")->execute([$userId]);
+
+            $pdo->prepare("
+                UPDATE users SET status = 'active'
+                WHERE id = ? AND role = 'rider'
+            ")->execute([$userId]);
+
+            $logAction = 'Rider Approved';
+            $message = 'Rider approved successfully.';
+        } else {
+            $pdo->prepare("
+                UPDATE riders SET approval_status = 'rejected'
+                WHERE user_id = ?
+            ")->execute([$userId]);
+
+            $pdo->prepare("
+                UPDATE users SET status = 'inactive'
+                WHERE id = ? AND role = 'rider'
+            ")->execute([$userId]);
+
+            $logAction = 'Rider Rejected';
+            $message = 'Rider application rejected.';
+        }
+
+        $pdo->prepare("
+            INSERT INTO activity_logs (user_id, action, details)
+            VALUES (?, ?, ?)
+        ")->execute([
+            $_SESSION['user_id'],
+            $logAction,
+            $rider['full_name']
+        ]);
+
+        $pdo->commit();
+
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        $error = $e->getMessage();
+    }
+}
 
 // 查询所有 Rider 数据
 $riders = $pdo->query("
-    SELECT u.id as user_id, u.full_name, u.username, u.phone, r.vehicle_type, r.license_number
+    SELECT
+        u.id AS user_id,
+        u.full_name,
+        u.username,
+        u.phone,
+        u.status,
+        r.vehicle_type,
+        r.license_number,
+        r.approval_status
     FROM riders r
     JOIN users u ON r.user_id = u.id
     WHERE u.role = 'rider'
-    ORDER BY u.id ASC
+    ORDER BY
+        CASE r.approval_status
+            WHEN 'pending' THEN 0
+            WHEN 'approved' THEN 1
+            ELSE 2
+        END,
+        u.id ASC
 ")->fetchAll();
 
 require_once '../includes/header.php';
 ?>
 <style>
-/* CourierFlow Riders Page Background */
+/* CourierFlow Riders - Clean Professional Design */
 
 body {
-    background-image: url('../assets/images/courierflow-bg.png') !important;
-    background-size: cover !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    background-attachment: fixed !important;
+    background: #f1f5f9 !important;
+    background-image: none !important;
 }
 
-/* Show the background image */
 .app-shell {
-    background: transparent !important;
+    background: #f1f5f9 !important;
 }
 
-/* Rounded dashboard panel */
 .app-shell > .content {
-    background: rgba(238, 247, 255, 0.88) !important;
+    background: #f1f5f9 !important;
     border-radius: 20px !important;
 }
 
-/* Make the Admin Console header blend into the dashboard */
 .app-shell > .content > .topbar {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
 }
-/* ==========================================
-   COURIERFLOW RIDERS PAGE FINAL DESIGN
-========================================== */
 
-/* Unified dashboard container */
-.app-shell > .content {
-    background: rgba(235, 245, 255, 0.88) !important;
-    border: 1px solid rgba(255, 255, 255, 0.9) !important;
-    border-radius: 20px !important;
-    margin: 20px !important;
-    padding: 20px !important;
-    box-shadow: 0 12px 35px rgba(15, 23, 42, 0.12) !important;
+.main-content {
+    background: #f1f5f9 !important;
 }
 
-/* Admin Console header */
-.app-shell > .content > .topbar {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-    padding: 8px 12px 20px !important;
-}
-
-/* White rider cards */
-.app-shell > .content .panel.card {
-    background: rgba(255, 255, 255, 0.97) !important;
+.card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
     border-radius: 16px !important;
-    border: 1px solid #e0edff !important;
-    padding: 22px !important;
-    box-shadow: 0 8px 25px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05) !important;
+}
+
+.card h3 {
+    color: #1e3a8a !important;
 }
 </style>
 
@@ -272,13 +341,14 @@ body {
                     <th>Phone</th>
                     <th>Vehicle</th>
                     <th>License</th>
-                    <th>Action</th>
+<th>Approval Status</th>
+<th>Action</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($riders)): ?>
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #94a3b8; padding: 20px;">No riders found.</td>
+                        <td colspan="7" style="text-align: center; color: #94a3b8; padding: 20px;">No riders found.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($riders as $r): ?>
@@ -289,6 +359,38 @@ body {
                             <td><?= htmlspecialchars($r['vehicle_type'] ?: '-') ?></td>
                             <td><?= htmlspecialchars($r['license_number'] ?: '-') ?></td>
                             <td>
+    <?php if ($r['approval_status'] === 'pending'): ?>
+        <span style="color: #d97706; font-weight: bold;">Pending</span>
+    <?php elseif ($r['approval_status'] === 'approved'): ?>
+        <span style="color: #16a34a; font-weight: bold;">Approved</span>
+    <?php else: ?>
+        <span style="color: #dc2626; font-weight: bold;">Rejected</span>
+    <?php endif; ?>
+</td>
+                            <td>
+                                <?php if ($r['approval_status'] === 'pending'): ?>
+
+    <form method="POST" style="display:inline;">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="approve_rider">
+        <input type="hidden" name="user_id" value="<?= (int) $r['user_id'] ?>">
+        <button type="submit" class="btn btn-primary"
+                onclick="return confirm('Approve this rider?');">
+            Approve
+        </button>
+    </form>
+
+    <form method="POST" style="display:inline;">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="reject_rider">
+        <input type="hidden" name="user_id" value="<?= (int) $r['user_id'] ?>">
+        <button type="submit" class="btn btn-danger"
+                onclick="return confirm('Reject this rider?');">
+            Reject
+        </button>
+    </form>
+
+<?php endif; ?>
                                 <form method="POST" onsubmit="return confirm('Are you sure you want to delete rider <?= htmlspecialchars($r['full_name'], ENT_QUOTES, 'UTF-8') ?>? This action cannot be undone.');" style="display: inline;">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="action" value="delete_rider">

@@ -13,7 +13,7 @@ $bodyAttributes = $bodyAttributes ?? '';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body <?= $bodyAttributes ?>>
-<div class="app-shell">
+<div class="app-shell <?= is_admin() ? 'admin-app-shell' : 'rider-app-shell' ?>">
     <?php
 $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
 ?>
@@ -23,7 +23,7 @@ $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
     <div class="brand courier-brand">
         <h2>
             <i class="bi bi-box-seam-fill"></i>
-            Courier<span>Flow</span>
+            <span>CourierFlow</span>
         </h2>
         <p>Native PHP Delivery Suite</p>
     </div>
@@ -69,7 +69,6 @@ $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
                 <i class="bi bi-person-circle"></i>
                 <span>Profile</span>
             </a>
-
         <?php endif; ?>
 
         <a href="<?= $assetBase ?>logout.php" class="nav-link">
