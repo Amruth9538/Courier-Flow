@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $tracking = strtoupper(trim((string) ($_POST['tracking_no'] ?? '')));
 $requestedStatus = trim((string) ($_POST['status'] ?? ''));
 $note = trim((string) ($_POST['note'] ?? ''));
-if (!preg_match('/^IN[0-9]{14}$/', $tracking)) {
+if (!preg_match('/^[A-Z0-9][A-Z0-9-]{0,39}$/', $tracking)) {
     http_response_code(400);
     exit('Invalid international tracking number.');
 }
