@@ -78,6 +78,12 @@ th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align:
     .content { padding: 16px; }
     .topbar { flex-direction:column; align-items:flex-start; gap:10px; }
 }
+@media (max-width: 480px) {
+    .auth-page > .page-back-button {
+        top: 12px;
+        left: 12px;
+    }
+}
 
 
 .tracking-summary {
@@ -407,6 +413,45 @@ th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align:
     gap: 12px;
 }
 
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.page-back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 16px;
+}
+
+.auth-card > .page-back-button {
+    margin-bottom: 18px;
+}
+
+.auth-page > .page-back-button {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    margin: 0;
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-page > .page-back-button:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.auth-page > .page-back-button:focus-visible {
+    outline: 3px solid rgba(47, 111, 237, 0.35);
+    outline-offset: 2px;
+}
+
 .status-pill {
     background: #dbeafe;
     color: #1d4ed8;
@@ -602,6 +647,45 @@ body.auth-page {
     text-align: center !important;
     margin-bottom: 25px !important;
     line-height: 1.6;
+}
+
+.login-card {
+    width: min(100%, 480px);
+    padding: 38px 40px 40px !important;
+}
+
+.login-card .auth-card__header {
+    margin-bottom: 28px;
+}
+
+.login-card .auth-card__header p {
+    margin-bottom: 0 !important;
+}
+
+.login-card .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.login-card .auth-form label {
+    gap: 9px;
+    margin-bottom: 0;
+}
+
+.login-card .auth-form input {
+    min-height: 48px;
+}
+
+.login-card .auth-form button[type="submit"] {
+    min-height: 48px;
+    margin-top: 2px;
+}
+
+@media (max-width: 520px) {
+    .login-card {
+        padding: 28px 24px 30px !important;
+    }
 }
 
 /* RIDER CONSOLE BACKGROUND FIX */

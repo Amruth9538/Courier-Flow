@@ -66,7 +66,10 @@ if (
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="auth-page">
-    <div class="auth-card">
+    <button class="btn btn-secondary page-back-button" type="button" data-back-button data-back-fallback="index.php">
+        &larr; Back
+    </button>
+    <div class="auth-card login-card">
         <div class="auth-card__header">
             <h1>🚚 CourierFlow</h1>
             <p>Smart Parcel Delivery & Tracking System</p>
@@ -89,11 +92,7 @@ if (
             <button type="submit" class="btn btn-primary">Login</button>
         </form>
 
-        <div class="auth-footer" style="text-align: left; font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 16px;">
-            <p style="margin: 0; font-weight: 700; color: #0f172a; font-size: 14px;"><strong>Demo accounts</strong></p>
-            <p style="margin: 4px 0 0 0;"><strong>Admin:</strong> admin@example.com / password</p>
-            <p style="margin: 2px 0 0 0;"><strong>Rider:</strong> rider2@gmail.com / 12121212</p>
-        </div>
     </div>
+    <script src="assets/js/back-navigation.js"></script>
 </body>
 </html>

@@ -99,6 +99,10 @@ $customerParcels = $parcelStmt->fetchAll(PDO::FETCH_ASSOC);
 
 <main style="max-width:1000px; margin:40px auto; padding:20px;">
 
+    <button class="btn btn-secondary page-back-button" type="button" data-back-button data-back-hide-without-history>
+        Back
+    </button>
+
     <div class="panel" style="padding:30px;">
 
         <h1>📦 CourierFlow Customer Dashboard</h1>
@@ -318,5 +322,6 @@ $customerParcels = $parcelStmt->fetchAll(PDO::FETCH_ASSOC);
 
 </main>
 
+<script src="assets/js/back-navigation.js"></script>
 </body>
 </html>

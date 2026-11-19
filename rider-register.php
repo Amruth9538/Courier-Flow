@@ -201,6 +201,10 @@ $message = 'Database Error: ' . $e->getMessage();
 
 <body class="auth-page">
 
+<button class="btn btn-secondary page-back-button" type="button" data-back-button data-back-fallback="index.php">
+    &larr; Back
+</button>
+
 <div class="auth-card">
 
     <div class="auth-card__header">
@@ -281,12 +285,10 @@ $message = 'Database Error: ' . $e->getMessage();
         <p>Already have a rider account?</p>
         <a href="login.php?role=rider">Rider Login</a>
 
-        <p>
-            <a href="index.php">← Back to Welcome Page</a>
-        </p>
     </div>
 
 </div>
 
+<script src="assets/js/back-navigation.js"></script>
 </body>
 </html>

@@ -21,6 +21,9 @@ if ($trackingNumber !== '') {
 </head>
 <body style="background:#f1f5f9;">
 <main style="max-width:1100px; margin:40px auto; padding:0 20px;">
+    <button class="btn btn-secondary page-back-button" type="button" data-back-button data-back-fallback="index.php">
+        Back
+    </button>
     <div class="panel">
         <h1 style="margin-top:0;">CourierFlow Delivery Tracking</h1>
         <?php if (!$parcel): ?>
@@ -62,5 +65,6 @@ if ($trackingNumber !== '') {
     </div>
 </main>
 <?php if ($parcel): ?><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="assets/js/route-history.js"></script><?php endif; ?>
+<script src="assets/js/back-navigation.js"></script>
 </body>
 </html>

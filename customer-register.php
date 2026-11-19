@@ -86,6 +86,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body class="auth-page">
 
+<button class="btn btn-secondary page-back-button" type="button" data-back-button data-back-fallback="index.php">
+    &larr; Back
+</button>
+
 <div class="auth-card">
 
     <div class="auth-card__header">
@@ -174,5 +178,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 </div>
 
+<script src="assets/js/back-navigation.js"></script>
 </body>
 </html>
