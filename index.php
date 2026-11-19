@@ -30,15 +30,21 @@ if (is_logged_in()) {
         }
 
         body {
-            font-family: Arial, sans-serif;
-            min-height: 100vh;
-            color: white;
-            background: linear-gradient(135deg, #080d1b, #101d38, #07101f);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 25px;
-        }
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    color: white;
+    background:
+        linear-gradient(rgba(2, 15, 30, 0.50), rgba(2, 15, 30, 0.50)),
+        url('assets/images/courierflow1-bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 25px;
+}
 
         .container {
             width: 100%;
@@ -47,29 +53,33 @@ if (is_logged_in()) {
         }
 
         .logo {
-            font-size: 38px;
-            font-weight: bold;
-            color: #42d9ff;
-            letter-spacing: 2px;
-            margin-bottom: 12px;
-        }
+    font-size: 38px;
+    font-weight: bold;
+    color: #42d9ff;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
 
-        .tagline {
-            color: #b5c6df;
-            font-size: 16px;
-            margin-bottom: 45px;
-        }
+.tagline {
+    color: #ffffff;
+    font-size: 16px;
+    margin-bottom: 45px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
 
-        h1 {
-            font-size: 34px;
-            margin-bottom: 12px;
-        }
+h1 {
+    font-size: 34px;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
 
-        .description {
-            color: #aabbd3;
-            margin-bottom: 35px;
-            line-height: 1.6;
-        }
+.description {
+    color: #e6eefc;
+    margin-bottom: 35px;
+    line-height: 1.6;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
 
         .cards {
             display: grid;
@@ -78,14 +88,15 @@ if (is_logged_in()) {
         }
 
         .card {
-            text-decoration: none;
-            color: white;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(66,217,255,0.25);
-            border-radius: 16px;
-            padding: 30px 20px;
-            transition: 0.3s;
-        }
+    text-decoration: none;
+    color: white;
+    background: rgba(8, 20, 50, 0.85);
+    border: 1px solid rgba(66, 217, 255, 0.5);
+    border-radius: 16px;
+    padding: 30px 20px;
+    transition: 0.3s;
+    backdrop-filter: blur(6px);
+}
 
         .card:hover {
             transform: translateY(-6px);
@@ -106,16 +117,17 @@ if (is_logged_in()) {
         }
 
         .card p {
-            color: #b5c6df;
-            font-size: 14px;
-            line-height: 1.5;
-        }
+    color: #e6eefc;
+    font-size: 14px;
+    line-height: 1.5;
+}
 
-        footer {
-            margin-top: 40px;
-            color: #8294ad;
-            font-size: 13px;
-        }
+footer {
+    margin-top: 40px;
+    color: #d5e0f2;
+    font-size: 13px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
 
         @media (max-width: 600px) {
             .cards {

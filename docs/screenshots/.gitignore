@@ -26,3 +26,13 @@ secrets.php
 Thumbs.db
 # Local database installer
 install.php
+# Private delivery proof photos
+/uploads/proofs/
+
+# Local backup PHP files
+*backup*.php
+*-backup*.php
+# Ignore all local backup files
+*backup*.php
+*-backup*.php
+*backup*.txt
