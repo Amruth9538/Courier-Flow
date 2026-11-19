@@ -84,6 +84,20 @@ $parcelStmt = $pdo->prepare("
 $parcelStmt->execute([$customerId]);
 
 $customerParcels = $parcelStmt->fetchAll(PDO::FETCH_ASSOC);
+$shipmentSchemaReady = (bool) $pdo->query("SHOW TABLES LIKE 'shipments'")->fetchColumn();
+$customerShipments = [];
+if ($shipmentSchemaReady) {
+    $shipmentStmt = $pdo->prepare("
+        SELECT tracking_no, status, receiver_name, receiver_city, receiver_country,
+               pieces, chg_wt, total_value, currency, created_at
+        FROM shipments
+        WHERE user_id = ?
+        ORDER BY created_at DESC, id DESC
+        LIMIT 100
+    ");
+    $shipmentStmt->execute([$customerId]);
+    $customerShipments = $shipmentStmt->fetchAll(PDO::FETCH_ASSOC);
+}
 ?>
 
 <!DOCTYPE html>
@@ -93,6 +107,7 @@ $customerParcels = $parcelStmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Dashboard | CourierFlow</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/shipment.css">
 </head>
 
 <body style="background:#f1f5f9;">
@@ -113,6 +128,39 @@ $customerParcels = $parcelStmt->fetchAll(PDO::FETCH_ASSOC);
         </h2>
 
         <p>Track your deliveries and manage your parcel information.</p>
+        <?php if ($shipmentSchemaReady): ?>
+            <div class="shipment-buttons">
+                <a class="btn btn-primary" href="create-shipment.php">Create Shipment</a>
+                <a class="btn btn-secondary" href="shipment-list.php">View Shipment List (<?= count($customerShipments) ?>)</a>
+            </div>
+        <?php else: ?>
+            <p class="shipment-note">Shipment booking is not set up yet. Import <code>database_shipments.sql</code> to enable it.</p>
+        <?php endif; ?>
+
+        <?php if ($shipmentSchemaReady): ?><section class="shipment-section" style="margin-top:20px">
+            <h2>My Shipments (<?= count($customerShipments) ?>)</h2>
+            <div class="shipment-table-wrap">
+                <table class="shipment-table">
+                    <thead><tr><th>Tracking</th><th>Status</th><th>Recipient</th><th>Destination</th><th>Pieces</th><th>Chargeable wt.</th><th>Value</th><th>Booked</th><th>Invoice</th></tr></thead>
+                    <tbody>
+                    <?php if (!$customerShipments): ?><tr><td colspan="9">No shipments booked yet.</td></tr><?php endif; ?>
+                    <?php foreach ($customerShipments as $shipment): ?>
+                        <tr>
+                            <td><a href="shipment-success.php?tracking=<?= urlencode($shipment['tracking_no']) ?>"><?= htmlspecialchars($shipment['tracking_no'], ENT_QUOTES, 'UTF-8') ?></a></td>
+                            <td><?= htmlspecialchars($shipment['status'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= htmlspecialchars($shipment['receiver_name'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= htmlspecialchars($shipment['receiver_city'] . ', ' . $shipment['receiver_country'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= (int) $shipment['pieces'] ?></td>
+                            <td><?= number_format((float) $shipment['chg_wt'], 3) ?> kg</td>
+                            <td><?= htmlspecialchars($shipment['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $shipment['total_value'], 2) ?></td>
+                            <td><?= htmlspecialchars($shipment['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><a target="_blank" rel="noopener" href="invoice-preview.php?tracking=<?= urlencode($shipment['tracking_no']) ?>">Preview</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </section><?php endif; ?>
 
         <div style="
             background:#eff6ff;

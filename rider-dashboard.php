@@ -425,9 +425,6 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 
 <style>
-    body {
-    outline: 5px solid #00ff00 !important;
-}
 /* =====================================
    COURIERFLOW RIDER DASHBOARD DESIGN
 ===================================== */
@@ -1334,7 +1331,7 @@ body {
 
 </style>
 
-<script src="assets/js/rider-tracking.js"></script>
+<script src="assets/js/rider-tracking.js?v=<?= (int) filemtime(__DIR__ . '/assets/js/rider-tracking.js') ?>"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const statusModal = document.getElementById('statusModal');
@@ -1984,7 +1981,550 @@ body {
 
 </style>
 </style>
+<style>
+body {
+    background: #f4f7fb !important;
+    background-image: none !important;
+    color: #172b4d !important;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    outline: 0 !important;
+}
+
+.rider-app-shell {
+    min-height: 100vh;
+    background: #f4f7fb !important;
+}
+
+.rider-app-shell > .sidebar {
+    flex: 0 0 252px;
+    width: 252px;
+    padding: 28px 16px;
+    background: #101b2d !important;
+    border: 0 !important;
+    box-shadow: 4px 0 20px rgba(15, 23, 42, .06);
+}
+
+.rider-app-shell .courier-brand {
+    padding: 0 10px;
+    margin-bottom: 42px;
+}
+
+.rider-app-shell .courier-brand h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #f8fafc !important;
+    font-size: 21px;
+    letter-spacing: -.4px;
+}
+
+.rider-app-shell .courier-brand h2 i {
+    color: #60a5fa;
+}
+
+.rider-app-shell .courier-brand p {
+    margin: 8px 0 0;
+    color: #91a0b7 !important;
+    font-size: 12px;
+}
+
+.rider-app-shell .courier-nav {
+    gap: 6px;
+}
+
+.rider-app-shell .courier-nav .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 46px;
+    margin: 0;
+    padding: 12px 14px;
+    color: #c4cede !important;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color .18s ease, color .18s ease;
+}
+
+.rider-app-shell .courier-nav .nav-link:hover,
+.rider-app-shell .courier-nav .nav-link.active {
+    color: #fff !important;
+    background: #22314a !important;
+    box-shadow: none !important;
+}
+
+.rider-app-shell .courier-nav .nav-link.active {
+    border-color: rgba(96, 165, 250, .25);
+    box-shadow: inset 3px 0 #60a5fa !important;
+}
+
+.rider-app-shell > .content {
+    min-width: 0;
+    margin: 0 !important;
+    padding: clamp(20px, 3vw, 42px) !important;
+    background: #f4f7fb !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.rider-app-shell > .content > .topbar {
+    min-height: 100px;
+    margin: 0 0 26px !important;
+    padding: 22px 26px !important;
+    color: #172b4d !important;
+    background: #fff !important;
+    border: 1px solid #e6ebf2 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, .035) !important;
+}
+
+.rider-app-shell .topbar h1 {
+    margin: 0 0 5px;
+    color: #172b4d !important;
+    font-size: 25px;
+    font-weight: 700;
+    letter-spacing: -.5px;
+}
+
+.rider-app-shell .topbar p {
+    margin: 0;
+    color: #718096 !important;
+    font-size: 14px;
+}
+
+.rider-app-shell .topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rider-app-shell .topbar .status-pill {
+    padding: 9px 13px;
+    color: #365b88 !important;
+    background: #edf4ff !important;
+    border: 1px solid #dce9fb;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.rider-app-shell .main-content {
+    padding: 0 !important;
+    color: #334155 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.rider-app-shell .main-content .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+    margin: 0 0 20px !important;
+}
+
+.rider-app-shell .main-content .stat-card {
+    min-width: 0;
+    padding: 20px 22px !important;
+    background: #fff !important;
+    border: 1px solid #e6ebf2 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, .035) !important;
+    text-align: left !important;
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.rider-app-shell .main-content .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, .07) !important;
+}
+
+.rider-app-shell .main-content .stat-card h3 {
+    margin: 0 0 14px !important;
+    color: #64748b !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+.rider-app-shell .main-content .stat-card p {
+    margin: 0 !important;
+    color: #2563eb !important;
+    font-size: 30px !important;
+    font-weight: 700 !important;
+    line-height: 1.15;
+    text-shadow: none !important;
+}
+
+.rider-app-shell .main-content .stat-card:nth-child(2) p { color: #d97706 !important; }
+.rider-app-shell .main-content .stat-card:nth-child(3) p { color: #6d5bd0 !important; }
+.rider-app-shell .main-content .stat-card:nth-child(4) p { color: #15966a !important; }
+
+.rider-app-shell .main-content .alert {
+    border: 1px solid transparent;
+}
+
+.rider-app-shell .main-content .rider-availability-card,
+.rider-app-shell .main-content .rider-map-panel,
+.rider-app-shell .main-content .delivery-mission-panel {
+    margin: 0 0 18px !important;
+    padding: 22px !important;
+    color: #334155 !important;
+    background: #fff !important;
+    border: 1px solid #e6ebf2 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, .035) !important;
+}
+
+.rider-app-shell .main-content .rider-availability-card {
+    min-height: 112px;
+}
+
+.rider-app-shell .main-content .rider-availability-card h2,
+.rider-app-shell .main-content .rider-map-header h2 {
+    margin: 0 0 8px !important;
+    color: #172b4d !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+}
+
+.rider-app-shell .main-content .rider-availability-card p,
+.rider-app-shell .main-content .rider-map-header p {
+    margin: 0 !important;
+    color: #64748b !important;
+    font-size: 14px !important;
+    line-height: 1.55;
+}
+
+.rider-app-shell .main-content .rider-availability-card button[type="submit"] {
+    min-height: 42px;
+    padding: 10px 16px !important;
+    border: 0 !important;
+    border-radius: 9px !important;
+    box-shadow: none !important;
+    font-size: 13px !important;
+}
+
+.rider-app-shell .main-content .rider-availability-card .btn-success {
+    background: #16865d !important;
+}
+
+.rider-app-shell .main-content .rider-availability-card .btn-danger {
+    background: #c43d43 !important;
+}
+
+.rider-app-shell .main-content .rider-map-panel {
+    padding: 22px !important;
+}
+
+.rider-app-shell .main-content .rider-map-header {
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.rider-app-shell .main-content .rider-map-badge {
+    padding: 8px 12px !important;
+    color: #147d55 !important;
+    background: #eaf8f1 !important;
+    border: 1px solid #d4efdf !important;
+    border-radius: 999px !important;
+    box-shadow: none !important;
+    font-size: 12px !important;
+}
+
+.rider-app-shell .main-content #rider-map.rider-modern-map {
+    height: 400px !important;
+    min-height: 320px !important;
+    border: 1px solid #dbe3ed !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+}
+
+.rider-app-shell .main-content #rider-tracking-summary {
+    margin-top: 14px !important;
+    padding: 0 !important;
+    color: #334155 !important;
+    background: transparent !important;
+    border: 0 !important;
+}
+
+.rider-app-shell .main-content .tracking-card {
+    padding: 16px !important;
+    background: #f8fafc !important;
+    border: 1px solid #e6ebf2 !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+}
+
+.rider-app-shell .main-content .tracking-card h3 {
+    margin: 0 0 6px;
+    color: #172b4d;
+    font-size: 14px;
+}
+
+.rider-app-shell .main-content .tracking-card p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.rider-app-shell .main-content .delivery-mission-panel {
+    overflow-x: auto;
+}
+
+.rider-app-shell .main-content .delivery-mission-panel h2 {
+    margin: 0 0 18px !important;
+    color: #172b4d !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table {
+    min-width: 760px;
+    border-collapse: separate !important;
+    border-spacing: 0;
+    overflow: hidden;
+    border: 1px solid #e6ebf2;
+    border-radius: 10px;
+}
+
+.rider-app-shell .main-content .modern-delivery-table th {
+    padding: 13px 14px !important;
+    color: #64748b !important;
+    background: #f7f9fc !important;
+    border-bottom: 1px solid #e6ebf2;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+}
+
+.rider-app-shell .main-content .modern-delivery-table td {
+    padding: 15px 14px !important;
+    color: #334155 !important;
+    background: #fff !important;
+    border-bottom: 1px solid #edf0f5 !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table tbody tr:last-child td {
+    border-bottom: 0 !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table tbody tr:hover td {
+    background: #fafcff !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table td strong {
+    color: #172b4d !important;
+    font-weight: 650 !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table td small {
+    color: #718096 !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table .badge {
+    display: inline-flex;
+    padding: 5px 9px;
+    color: #8a5a00 !important;
+    background: #fff5d8 !important;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    -webkit-text-fill-color: currentColor !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table .badge-in_transit,
+.rider-app-shell .main-content .modern-delivery-table .badge-out {
+    color: #285db4 !important;
+    background: #edf4ff !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table .badge-delivered {
+    color: #147d55 !important;
+    background: #eaf8f1 !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table .badge-cancelled {
+    color: #b4232f !important;
+    background: #fff0f0 !important;
+}
+
+.rider-app-shell .main-content .modern-delivery-table .btn-update-status {
+    min-height: 38px;
+    padding: 9px 12px !important;
+    color: #fff !important;
+    background: #2563eb !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.rider-app-shell #statusModal > div {
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    border: 1px solid #e6ebf2;
+    border-radius: 14px !important;
+}
+
+.rider-app-shell #statusModal .form-label {
+    display: block;
+    margin-bottom: 6px;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.rider-app-shell #statusModal .form-input,
+.rider-app-shell #statusModal .form-select,
+.rider-app-shell #statusModal .form-textarea {
+    min-height: 42px;
+    padding: 10px 12px !important;
+    color: #172b4d !important;
+    background: #fff !important;
+    border: 1px solid #cfd8e5 !important;
+    border-radius: 8px !important;
+    font: inherit;
+}
+
+.rider-app-shell .rider-location-control {
+    overflow: hidden;
+    border: 1px solid #dbe3ed !important;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .12);
+}
+
+.rider-app-shell .rider-location-button {
+    display: inline-flex;
+    min-width: 40px;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 11px;
+    color: #1e3a5f;
+    background: #fff;
+    border: 0;
+    cursor: pointer;
+    font: 600 12px/1 inherit;
+}
+
+.rider-app-shell .rider-location-button:hover {
+    color: #1d4ed8;
+    background: #f3f7fd;
+}
+
+.rider-app-shell .rider-location-button i {
+    font-size: 15px;
+}
+
+.rider-app-shell :where(button, a, input, select, textarea):focus-visible {
+    outline: 3px solid rgba(37, 99, 235, .35);
+    outline-offset: 2px;
+}
+
+@media (max-width: 1000px) {
+    .rider-app-shell .main-content .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 760px) {
+    .rider-app-shell {
+        flex-direction: column;
+    }
+
+    .rider-app-shell > .sidebar {
+        width: 100%;
+        padding: 14px 16px;
+    }
+
+    .rider-app-shell .courier-brand {
+        margin-bottom: 14px;
+    }
+
+    .rider-app-shell .courier-brand p {
+        display: none;
+    }
+
+    .rider-app-shell .courier-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .rider-app-shell .courier-nav .nav-link {
+        min-height: 40px;
+        padding: 9px 11px;
+    }
+
+    .rider-app-shell > .content {
+        padding: 18px 14px !important;
+    }
+
+    .rider-app-shell > .content > .topbar {
+        align-items: flex-start;
+        gap: 14px;
+        padding: 18px !important;
+    }
+}
+
+@media (max-width: 560px) {
+    .rider-app-shell .main-content .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px !important;
+    }
+
+    .rider-app-shell .main-content .stat-card {
+        padding: 15px !important;
+    }
+
+    .rider-app-shell .main-content .stat-card h3 {
+        font-size: 12px !important;
+    }
+
+    .rider-app-shell .main-content .stat-card p {
+        font-size: 25px !important;
+    }
+
+    .rider-app-shell > .content > .topbar {
+        flex-direction: column;
+    }
+
+    .rider-app-shell .topbar h1 {
+        font-size: 22px;
+    }
+
+    .rider-app-shell .main-content .rider-availability-card {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 18px !important;
+    }
+
+    .rider-app-shell .main-content .rider-map-panel,
+    .rider-app-shell .main-content .delivery-mission-panel {
+        padding: 16px !important;
+    }
+
+    .rider-app-shell .main-content #rider-map.rider-modern-map {
+        height: 320px !important;
+        min-height: 280px !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rider-app-shell *,
+    .rider-app-shell *::before,
+    .rider-app-shell *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+    }
+}
+</style>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
-
-
-

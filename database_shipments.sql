@@ -1,0 +1,159 @@
+USE parcel_delivery_system;
+
+-- Expand the existing role set so customer accounts can use shipment booking.
+-- This preserves existing admin/rider values and all user records.
+ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'rider', 'customer') NOT NULL;
+
+CREATE TABLE IF NOT EXISTS address_book (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    type ENUM('shipper', 'receiver') NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    company VARCHAR(150) DEFAULT NULL,
+    country VARCHAR(100) NOT NULL,
+    postal_code VARCHAR(20) NOT NULL,
+    state VARCHAR(100) NOT NULL,
+    state_code VARCHAR(20) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    station_name VARCHAR(100) DEFAULT NULL,
+    sub_urb VARCHAR(100) NOT NULL,
+    short_address VARCHAR(255) DEFAULT NULL,
+    latitude DECIMAL(10,7) NOT NULL DEFAULT 0,
+    longitude DECIMAL(10,7) NOT NULL DEFAULT 0,
+    address_line1 VARCHAR(255) NOT NULL,
+    address_line2 VARCHAR(255) NOT NULL,
+    address_line3 VARCHAR(255) DEFAULT NULL,
+    email VARCHAR(150) DEFAULT NULL,
+    phone_type ENUM('Mobile', 'Landline') NOT NULL DEFAULT 'Mobile',
+    country_code VARCHAR(8) NOT NULL,
+    mobile VARCHAR(30) NOT NULL,
+    identification_type VARCHAR(40) NOT NULL,
+    identification_number VARCHAR(80) NOT NULL,
+    is_default TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_address_book_user_type (user_id, type),
+    CONSTRAINT fk_address_book_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS shipments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tracking_no VARCHAR(40) NOT NULL UNIQUE,
+    user_id INT NOT NULL,
+    status ENUM('Booked', 'Picked Up', 'In Transit', 'Out for Delivery', 'Delivered', 'Cancelled')
+        NOT NULL DEFAULT 'Booked',
+    shipper_name VARCHAR(150) NOT NULL,
+    shipper_company VARCHAR(150) DEFAULT NULL,
+    shipper_country VARCHAR(100) NOT NULL,
+    shipper_postal_code VARCHAR(20) NOT NULL,
+    shipper_state VARCHAR(100) NOT NULL,
+    shipper_state_code VARCHAR(20) NOT NULL,
+    shipper_city VARCHAR(100) NOT NULL,
+    shipper_station_name VARCHAR(100) DEFAULT NULL,
+    shipper_sub_urb VARCHAR(100) NOT NULL,
+    shipper_short_address VARCHAR(255) DEFAULT NULL,
+    shipper_latitude DECIMAL(10,7) NOT NULL DEFAULT 0,
+    shipper_longitude DECIMAL(10,7) NOT NULL DEFAULT 0,
+    shipper_address_line1 VARCHAR(255) NOT NULL,
+    shipper_address_line2 VARCHAR(255) NOT NULL,
+    shipper_address_line3 VARCHAR(255) DEFAULT NULL,
+    shipper_email VARCHAR(150) DEFAULT NULL,
+    shipper_phone_type ENUM('Mobile', 'Landline') NOT NULL DEFAULT 'Mobile',
+    shipper_country_code VARCHAR(8) NOT NULL,
+    shipper_mobile VARCHAR(30) NOT NULL,
+    shipper_identification_type VARCHAR(40) NOT NULL,
+    shipper_identification_number VARCHAR(80) NOT NULL,
+    receiver_name VARCHAR(150) NOT NULL,
+    receiver_company VARCHAR(150) DEFAULT NULL,
+    receiver_country VARCHAR(100) NOT NULL,
+    receiver_postal_code VARCHAR(20) NOT NULL,
+    receiver_state VARCHAR(100) NOT NULL,
+    receiver_state_code VARCHAR(20) NOT NULL,
+    receiver_city VARCHAR(100) NOT NULL,
+    receiver_station_name VARCHAR(100) DEFAULT NULL,
+    receiver_sub_urb VARCHAR(100) NOT NULL,
+    receiver_short_address VARCHAR(255) DEFAULT NULL,
+    receiver_latitude DECIMAL(10,7) NOT NULL DEFAULT 0,
+    receiver_longitude DECIMAL(10,7) NOT NULL DEFAULT 0,
+    receiver_address_line1 VARCHAR(255) NOT NULL,
+    receiver_address_line2 VARCHAR(255) NOT NULL,
+    receiver_address_line3 VARCHAR(255) DEFAULT NULL,
+    receiver_email VARCHAR(150) DEFAULT NULL,
+    receiver_phone_type ENUM('Mobile', 'Landline') NOT NULL DEFAULT 'Mobile',
+    receiver_country_code VARCHAR(8) NOT NULL,
+    receiver_mobile VARCHAR(30) NOT NULL,
+    receiver_identification_type VARCHAR(40) NOT NULL,
+    receiver_identification_number VARCHAR(80) NOT NULL,
+    package_type ENUM('Non Docs', 'Docs') NOT NULL DEFAULT 'Non Docs',
+    pieces SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    carrier VARCHAR(80) NOT NULL DEFAULT 'Self',
+    service VARCHAR(80) NOT NULL DEFAULT 'Express Saver',
+    manual_invoice_no VARCHAR(80) DEFAULT NULL,
+    reference_number VARCHAR(100) DEFAULT NULL,
+    currency CHAR(3) NOT NULL DEFAULT 'INR',
+    rate_fetch_type VARCHAR(80) NOT NULL DEFAULT 'Auto Contract Rate Plan',
+    contents VARCHAR(255) NOT NULL,
+    contents_summarized TINYINT(1) NOT NULL DEFAULT 0,
+    remarks TEXT DEFAULT NULL,
+    customer_reference VARCHAR(100) DEFAULT NULL,
+    customs_status TEXT DEFAULT NULL,
+    tds TINYINT(1) NOT NULL DEFAULT 0,
+    commercial TINYINT(1) NOT NULL DEFAULT 0,
+    terms_of_delivery VARCHAR(255) NOT NULL,
+    packaging VARCHAR(100) NOT NULL,
+    actual_wt DECIMAL(10,3) NOT NULL,
+    vol_wt DECIMAL(10,3) NOT NULL DEFAULT 0,
+    chg_wt DECIMAL(10,3) NOT NULL DEFAULT 0,
+    csb_type VARCHAR(30) NOT NULL DEFAULT 'CSB 4',
+    term_of_invoice VARCHAR(100) NOT NULL DEFAULT 'DDU - Delivery duty unpaid',
+    export_reason VARCHAR(100) NOT NULL DEFAULT 'Gifts',
+    gst_invoice TINYINT(1) NOT NULL DEFAULT 0,
+    gstin VARCHAR(30) DEFAULT NULL,
+    gst_details TEXT DEFAULT NULL,
+    ship_method ENUM('Schedule a Pick Up', 'Drop Off at Carrier') NOT NULL DEFAULT 'Drop Off at Carrier',
+    pickup_datetime DATETIME DEFAULT NULL,
+    own_invoice_path VARCHAR(255) DEFAULT NULL,
+    total_value DECIMAL(12,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_shipments_user_created (user_id, created_at),
+    INDEX idx_shipments_status (status),
+    CONSTRAINT fk_shipments_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS shipment_packages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    shipment_id INT NOT NULL,
+    length DECIMAL(10,2) NOT NULL,
+    width DECIMAL(10,2) NOT NULL,
+    height DECIMAL(10,2) NOT NULL,
+    unit ENUM('CM', 'IN') NOT NULL DEFAULT 'CM',
+    actual_wt DECIMAL(10,3) NOT NULL,
+    vol_wt DECIMAL(10,3) NOT NULL,
+    CONSTRAINT fk_shipment_packages_shipment FOREIGN KEY (shipment_id)
+        REFERENCES shipments(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS shipment_commodities (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    shipment_id INT NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    hs_code VARCHAR(30) DEFAULT NULL,
+    qty DECIMAL(10,2) NOT NULL,
+    unit_price DECIMAL(12,2) NOT NULL,
+    total DECIMAL(12,2) NOT NULL,
+    CONSTRAINT fk_shipment_commodities_shipment FOREIGN KEY (shipment_id)
+        REFERENCES shipments(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS shipment_status_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    shipment_id INT NOT NULL,
+    status ENUM('Booked', 'Picked Up', 'In Transit', 'Out for Delivery', 'Delivered', 'Cancelled')
+        NOT NULL,
+    note VARCHAR(255) NOT NULL DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_shipment_history_created (shipment_id, created_at),
+    CONSTRAINT fk_shipment_history_shipment FOREIGN KEY (shipment_id)
+        REFERENCES shipments(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

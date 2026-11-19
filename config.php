@@ -13,8 +13,10 @@ $user = $db_user ?? (getenv('DB_USER') ?: 'root');
 $pass = $db_pass ?? (getenv('DB_PASS') ?: '');
 $dbname = $db_name ?? (getenv('DB_NAME') ?: 'parcel_delivery_system');
 
-// OpenRouteService API key. Prefer setting ORS_API_KEY in the server environment.
-$orsApiKey = $ors_api_key ?? (getenv('ORS_API_KEY') ?: '');
+// Prefer a configured key in database.php; otherwise use the server environment.
+$orsApiKey = !empty($ors_api_key)
+    ? trim($ors_api_key)
+    : trim((string) (getenv('ORS_API_KEY') ?: ''));
 
 try {
     $pdo = new PDO("mysql:host={$host};dbname={$dbname};charset=utf8mb4", $user, $pass, [

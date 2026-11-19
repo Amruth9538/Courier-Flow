@@ -4,6 +4,8 @@ $bodyAttributes = $bodyAttributes ?? '';
 $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
 $showBackButton = !in_array($currentPage, ['dashboard.php', 'rider-dashboard.php'], true);
 $backFallback = is_admin() ? 'dashboard.php' : (is_rider() ? 'rider-dashboard.php' : 'customer-dashboard.php');
+$shipmentModuleReady = (bool) $pdo->query("SHOW TABLES LIKE 'shipments'")->fetchColumn();
+$isCustomer = ($_SESSION['role'] ?? '') === 'customer';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,11 +14,12 @@ $backFallback = is_admin() ? 'dashboard.php' : (is_rider() ? 'rider-dashboard.ph
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parcel Delivery Management System</title>
     <link rel="stylesheet" href="<?= $assetBase ?>assets/css/style.css">
+    <link rel="stylesheet" href="<?= $assetBase ?>assets/css/shipment.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body <?= $bodyAttributes ?>>
-<div class="app-shell <?= is_admin() ? 'admin-app-shell' : 'rider-app-shell' ?>">
+<div class="app-shell <?= is_admin() ? 'admin-app-shell' : ($isCustomer ? 'customer-app-shell' : 'rider-app-shell') ?>">
 <aside class="sidebar courier-sidebar">
 
     <div class="brand courier-brand">
@@ -49,11 +52,40 @@ $backFallback = is_admin() ? 'dashboard.php' : (is_rider() ? 'rider-dashboard.ph
                 <span>Parcels</span>
             </a>
 
+            <?php if ($shipmentModuleReady): ?>
+            <a href="<?= $assetBase ?>shipment-list.php"
+               class="nav-link <?= $currentPage === 'shipment-list.php' ? 'active' : '' ?>">
+                <i class="bi bi-truck"></i>
+                <span>Shipments</span>
+            </a>
+            <?php endif; ?>
+
             <a href="<?= $assetBase ?>admin/reports.php"
                class="nav-link <?= $currentPage === 'reports.php' ? 'active' : '' ?>">
                 <i class="bi bi-bar-chart-fill"></i>
                 <span>Reports</span>
             </a>
+
+        <?php elseif ($isCustomer): ?>
+
+            <a href="<?= $assetBase ?>customer-dashboard.php"
+               class="nav-link <?= $currentPage === 'customer-dashboard.php' ? 'active' : '' ?>">
+                <i class="bi bi-house-door-fill"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <?php if ($shipmentModuleReady): ?>
+            <a href="<?= $assetBase ?>create-shipment.php"
+               class="nav-link <?= $currentPage === 'create-shipment.php' ? 'active' : '' ?>">
+                <i class="bi bi-plus-circle"></i>
+                <span>Create Shipment</span>
+            </a>
+            <a href="<?= $assetBase ?>shipment-list.php"
+               class="nav-link <?= $currentPage === 'shipment-list.php' ? 'active' : '' ?>">
+                <i class="bi bi-truck"></i>
+                <span>My Shipments</span>
+            </a>
+            <?php endif; ?>
 
         <?php else: ?>
 
@@ -81,7 +113,7 @@ $backFallback = is_admin() ? 'dashboard.php' : (is_rider() ? 'rider-dashboard.ph
     <main class="content">
         <header class="topbar">
             <div>
-                <h1><?= is_admin() ? 'Admin Console' : 'Rider Console' ?></h1>
+                <h1><?= is_admin() ? 'Admin Console' : ($isCustomer ? 'Customer Console' : 'Rider Console') ?></h1>
                 <p>Welcome back, <?= htmlspecialchars($_SESSION['full_name'] ?? 'User', ENT_QUOTES, 'UTF-8') ?>.</p>
             </div>
             <div class="topbar__actions">
@@ -91,6 +123,6 @@ $backFallback = is_admin() ? 'dashboard.php' : (is_rider() ? 'rider-dashboard.ph
                         <span>Back</span>
                     </button>
                 <?php endif; ?>
-                <span class="status-pill"><?= is_admin() ? 'Admin' : 'Delivery Rider' ?></span>
+                <span class="status-pill"><?= is_admin() ? 'Admin' : ($isCustomer ? 'Customer' : 'Delivery Rider') ?></span>
             </div>
         </header>

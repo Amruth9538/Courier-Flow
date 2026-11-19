@@ -11,6 +11,61 @@ if (!is_admin() && !is_rider()) {
 
 header('Content-Type: application/json');
 
+function get_osrm_route(float $startLng, float $startLat, float $endLng, float $endLat): array
+{
+    $coordinates = implode(';', [
+        $startLng . ',' . $startLat,
+        $endLng . ',' . $endLat,
+    ]);
+    $url = 'https://router.project-osrm.org/route/v1/driving/' . $coordinates . '?' . http_build_query([
+        'overview' => 'full',
+        'geometries' => 'geojson',
+        'steps' => 'false',
+    ]);
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_HTTPHEADER => ['Accept: application/json'],
+        CURLOPT_USERAGENT => 'CourierFlow Parcel Delivery System/1.0',
+    ]);
+    $response = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false || $curlError !== '') {
+        return ['ok' => false, 'message' => 'Could not contact the backup road-routing service.'];
+    }
+
+    $data = json_decode($response, true);
+    $route = $data['routes'][0] ?? null;
+    if ($httpCode < 200 || $httpCode >= 300 || !is_array($route)) {
+        return [
+            'ok' => false,
+            'message' => $data['message'] ?? 'The backup road-routing service could not find a route.',
+            'http_code' => $httpCode,
+        ];
+    }
+
+    return [
+        'ok' => true,
+        'data' => [
+            'features' => [[
+                'type' => 'Feature',
+                'geometry' => $route['geometry'] ?? null,
+                'properties' => [
+                    'summary' => [
+                        'distance' => $route['distance'] ?? null,
+                        'duration' => $route['duration'] ?? null,
+                    ],
+                ],
+            ]],
+        ],
+    ];
+}
+
 $riderId = (int) ($_GET['rider_id'] ?? 0);
 $parcelId = (int) ($_GET['parcel_id'] ?? 0);
 $startLat = isset($_GET['start_lat']) && $_GET['start_lat'] !== '' ? (float) $_GET['start_lat'] : null;
@@ -108,6 +163,7 @@ if ($parcelId > 0 && !$refreshRoute && !$needsAdminPlan) {
         if (is_array($snapshotGeometry) && !empty($snapshotGeometry['coordinates'])) {
             echo json_encode([
                 'success' => true,
+                'provider' => 'Saved route',
                 'start' => ['lat' => (float) $snapshot['start_latitude'], 'lng' => (float) $snapshot['start_longitude']],
                 'end' => ['lat' => (float) $snapshot['end_latitude'], 'lng' => (float) $snapshot['end_longitude']],
                 'tracking_number' => $parcel['tracking_number'] ?? null,
@@ -129,6 +185,7 @@ $result = ors_post_json('/v2/directions/driving-car/geojson', [
         [$endLng, $endLat],
     ],
 ]);
+$routeProvider = 'OpenRouteService';
 
 // Older parcels can contain an incorrect saved coordinate (for example, from a
 // browser location lookup). If that point is not close to a routable road,
@@ -150,9 +207,19 @@ if (!$result['ok'] && $usedStoredRecipientCoordinates && isset($parcel['recipien
 }
 
 if (!$result['ok'] || empty($result['data']['features'][0])) {
-    http_response_code(502);
-    echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Route calculation failed.']);
-    exit;
+    $orsError = $result['message'] ?? 'OpenRouteService could not calculate a route.';
+    $result = get_osrm_route($startLng, $startLat, $endLng, $endLat);
+    $routeProvider = 'OpenStreetMap routing fallback';
+
+    if (!$result['ok'] || empty($result['data']['features'][0])) {
+        http_response_code(502);
+        echo json_encode([
+            'success' => false,
+            'message' => ($result['message'] ?? 'Backup road routing failed.') . ' OpenRouteService: ' . $orsError,
+            'service_status' => $result['http_code'] ?? null,
+        ]);
+        exit;
+    }
 }
 
 $feature = $result['data']['features'][0];
@@ -161,7 +228,7 @@ $geometry = $feature['geometry'] ?? null;
 
 if (!$geometry || ($geometry['type'] ?? '') !== 'LineString' || empty($geometry['coordinates'])) {
     http_response_code(502);
-    echo json_encode(['success' => false, 'message' => 'OpenRouteService returned no road geometry for this route.']);
+    echo json_encode(['success' => false, 'message' => $routeProvider . ' returned no road geometry for this route.']);
     exit;
 }
 
@@ -184,10 +251,12 @@ if ($parcelId > 0) {
 
 echo json_encode([
     'success' => true,
+    'provider' => $routeProvider,
     'start' => ['lat' => $startLat, 'lng' => $startLng],
     'end' => ['lat' => $endLat, 'lng' => $endLng],
     'tracking_number' => $parcel['tracking_number'] ?? null,
     'distance_km' => $distanceKm,
     'duration_min' => $durationMin,
     'geometry' => $geometry,
+    'provider' => $routeProvider,
 ]);

@@ -14,6 +14,10 @@ $stats['offline'] = $pdo->query("SELECT COUNT(*) AS total FROM riders r JOIN use
 $stats['parcels'] = $pdo->query('SELECT COUNT(*) AS total FROM parcels')->fetchColumn();
 $stats['delivered'] = $pdo->query("SELECT COUNT(*) AS total FROM parcels WHERE status = 'Delivered'")->fetchColumn();
 $stats['pending'] = $pdo->query("SELECT COUNT(*) AS total FROM parcels WHERE status = 'Pending'")->fetchColumn();
+$shipmentSchemaReady = (bool) $pdo->query("SHOW TABLES LIKE 'shipments'")->fetchColumn();
+$stats['shipments'] = $shipmentSchemaReady
+    ? (int) $pdo->query('SELECT COUNT(*) FROM shipments')->fetchColumn()
+    : 0;
 
 $riders = $pdo->query("SELECT r.*, u.full_name, u.email FROM riders r JOIN users u ON u.id = r.user_id WHERE u.role = 'rider' ORDER BY r.is_online DESC, u.full_name ASC")->fetchAll();
 $parcels = $pdo->query('SELECT p.*, u.full_name AS rider_name FROM parcels p LEFT JOIN riders r ON r.id = p.assigned_rider_id LEFT JOIN users u ON u.id = r.user_id ORDER BY p.created_at DESC LIMIT 10')->fetchAll();
@@ -113,6 +117,20 @@ body {
     <p><?= (int) $stats['delivered'] ?></p>
 </div>
 
+<a class="stat-card admin-stat-card" href="shipment-list.php">
+    <div class="admin-stat-icon">🚚</div>
+    <h3>Booked Shipments</h3>
+    <p><?= (int) $stats['shipments'] ?></p>
+</a>
+
+</div>
+<div class="shipment-buttons" style="margin:0 0 20px;">
+<?php if ($shipmentSchemaReady): ?>
+    <a class="btn btn-primary" href="create-shipment.php">Create Shipment</a>
+    <a class="btn btn-secondary" href="shipment-list.php">View Shipments</a>
+<?php else: ?>
+    <span class="shipment-note">Import database_shipments.sql to enable shipment booking.</span>
+<?php endif; ?>
 </div>
 <!-- Modern Admin Live Rider Tracking -->
 <div class="panel admin-map-panel">

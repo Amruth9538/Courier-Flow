@@ -21,6 +21,7 @@ CourierFlow is a native PHP web application for managing parcel deliveries. Admi
 ## Features
 
 - Admin dashboard, rider directory, parcel management, and delivery reports
+- Customer/admin shipment booking, saved address book, commodities, package-weight calculations, and printable invoice preview
 - Rider accounts, online/offline state, assigned delivery list, and browser GPS updates
 - Parcel status history and delivery proof photo uploads
 - Public tracking page showing parcel status, rider position, and available planned/actual route history
@@ -146,9 +147,11 @@ This describes the current implementation rather than a claim of continuous real
 | `assets/css/`, `assets/js/`, `assets/images/` | Front-end styles, scripts, and images |
 | `includes/` | Shared page fragments |
 | `database.sql` | MySQL/MariaDB schema and initial admin/rider records |
+| `database_shipments.sql` | Additive schema for shipment bookings, addresses, packages, commodities, and status history |
 | `database.example.php` | Local/server database configuration template |
 | `track.php` | Public parcel tracking page |
 | `uploads/proofs/` | Runtime destination for delivery proof images (not included as app code) |
+| `uploads/invoices/` | Runtime destination for uploaded shipment invoice PDFs |
 
 ## Local setup
 
@@ -187,13 +190,19 @@ This describes the current implementation rather than a claim of continuous real
 
 4. Start **Apache** and **MySQL** in the XAMPP Control Panel.
 5. Import `database.sql` into MySQL using phpMyAdmin (`http://localhost/phpmyadmin`) or the MySQL command line. The script creates the `parcel_delivery_system` database and its initial admin/rider records. Do not rely on `install.php`: it is not part of the tracked release.
-6. Ensure the proof-upload directory exists and is writable by Apache:
+6. Import `database_shipments.sql` into the same database. It creates the shipment tables with `CREATE TABLE IF NOT EXISTS` and does not drop existing tables or shipment data.
+7. Ensure upload directories exist and are writable by Apache:
 
    ```powershell
    New-Item -ItemType Directory -Force uploads\proofs
+   New-Item -ItemType Directory -Force uploads\invoices
    ```
 
-7. Open `http://localhost/parcel_delivery_system/`.
+8. Open `http://localhost/parcel_delivery_system/`.
+
+### Shipment booking
+
+After importing `database_shipments.sql`, a logged-in customer or administrator can open `create-shipment.php` to book a shipment. Use **Shipment List** to search and view saved bookings. Customers only see their own shipments; admins can view all shipments. The form calculates volumetric and chargeable weight in the browser, then recalculates and validates the values on the server. Invoice uploads accept PDF files up to 2 MB. Payments are not collected or processed by this module.
 
 The initial accounts created by the checked-in SQL are:
 
@@ -206,7 +215,7 @@ These are demo credentials only. Change them before exposing the app to a networ
 
 ### Optional routing key
 
-Set the OpenRouteService key in the `$ors_api_key` value in `database.php`. The server uses this key for route requests. Do not place a real key in tracked source files. A secure environment-based configuration would require a small configuration change: the current `database.example.php` defines `$ors_api_key` as an empty string, which takes precedence over the environment fallback in `config.php`.
+Set the OpenRouteService key in the `$ors_api_key` value in the ignored `database.php`, or set `ORS_API_KEY` in the server environment. A non-empty `$ors_api_key` takes precedence; when it is empty, the environment variable is used. Do not place a real key in tracked source files. If OpenRouteService is not configured or rejects a request, the route endpoint falls back to the public OSRM demo service, which does not require a key. The public demo service is best-effort and rate-limited; use a contracted provider or self-hosted OSRM service for production traffic.
 
 ## AWS deployment: Amazon Linux EC2 and S3
 
@@ -352,8 +361,9 @@ S3 is used here as a private release artifact store. The current PHP upload code
 ## Current implementation notes
 
 - The tracked `database.sql` schema defines only the `admin` and `rider` roles and does not define the `customer_id`, `notifications`, or OTP tables referenced by some customer-related pages and code. Customer registration/dashboard, customer notifications, and OTP-related flows therefore need matching schema migrations before they can be relied on.
-- `api/route.php` contains OpenRouteService route calculation logic, but the current rider dashboard JavaScript displays a “road route calculation is disabled” message. Public tracking can show saved route data when available; verify the desired route workflow in the running version before depending on live directions.
+- The rider dashboard requests road routes from `api/route.php` using the rider's live GPS location and the active parcel destination. It refreshes after meaningful movement or one minute and displays distance and estimated travel time. Live road directions require an OpenRouteService API key; route errors are shown in the dashboard.
 - The database schema seeds demo credentials. Change them before deployment and treat all location, recipient, and proof-photo data as sensitive.
+- Shipment booking requires running the additive [`database_shipments.sql`](database_shipments.sql) migration after the base schema. Uploaded shipment invoices are stored in `uploads/invoices/` on the application host.
 - The single EC2 instance is a learning/demo deployment. It has no automatic scaling, managed database, multi-AZ failover, or built-in S3 photo storage.
 
 ## Screenshots
