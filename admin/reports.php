@@ -104,13 +104,30 @@ require_once __DIR__ . '/../includes/header.php';
                     <td><span class="badge <?= get_status_badge($row['status']) ?>"><?= htmlspecialchars($row['status'], ENT_QUOTES, 'UTF-8') ?></span></td>
                     <td><?= htmlspecialchars($row['rider_name'] ?? 'Unassigned', ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars($row['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><a class="btn btn-primary" href="reports.php?tracking=<?= urlencode($row['tracking_number']) ?>">View Route</a></td>
+                    <td>
+                        <?php if (!empty($row['assigned_rider_id'])): ?>
+                            <a class="btn btn-primary" href="reports.php?tracking=<?= urlencode($row['tracking_number']) ?>">View Route</a>
+                        <?php else: ?>
+                            <span class="muted" title="Assign a rider before viewing the delivery route.">No route — unassigned</span>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
         </table>
     </div>
-    <?php if ($selectedTracking !== ''): ?>
+    <?php if ($selectedTracking !== '' && !$selectedReport): ?>
+        <div class="panel" style="margin-top: 24px;">
+            <h3>Route unavailable</h3>
+            <p class="muted">No parcel was found for tracking number <?= htmlspecialchars($selectedTracking, ENT_QUOTES, 'UTF-8') ?>.</p>
+        </div>
+    <?php elseif ($selectedTracking !== '' && empty($selectedReport['assigned_rider_id'])): ?>
+        <div class="panel" style="margin-top: 24px;">
+            <h3>Route unavailable — rider not assigned</h3>
+            <p class="muted">Assign a rider to this parcel first. A route can be planned after the assigned rider shares their current location from the Rider Dashboard.</p>
+            <a class="btn btn-primary" href="parcels.php">Open parcel management</a>
+        </div>
+    <?php elseif ($selectedTracking !== ''): ?>
         <div class="panel" style="margin-top: 24px;">
             <h3>Route History — <?= htmlspecialchars($selectedTracking, ENT_QUOTES, 'UTF-8') ?></h3>
             <p id="route-history-message" class="muted">Loading route history…</p>
