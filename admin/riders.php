@@ -14,16 +14,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
     try {
         verify_csrf();
 
-        $fullName = sanitize_string($_POST['full_name'] ?? '');
+        $fullName = trim(sanitize_string($_POST['full_name'] ?? ''));
         $username = sanitize_string($_POST['username'] ?? '');
-        $email = filter_var(trim($_POST['email'] ?? ''), FILTER_VALIDATE_EMAIL);
+        $emailInput = trim((string) ($_POST['email'] ?? ''));
+        $email = filter_var($emailInput, FILTER_VALIDATE_EMAIL);
         $password = (string) ($_POST['password'] ?? '');
-        $phone = sanitize_string($_POST['phone'] ?? '');
+        $phone = trim((string) ($_POST['phone'] ?? ''));
         $vehicleType = sanitize_string($_POST['vehicle_type'] ?? '');
         $licenseNumber = sanitize_string($_POST['license_number'] ?? '');
 
-        if ($fullName === '' || $username === '' || !$email || $password === '') {
-            throw new RuntimeException('Please enter Full Name, Username, Email, and Password.');
+        if ($fullName === '' || $username === '' || !$email || $password === '' || $phone === '' || $vehicleType === '' || $licenseNumber === '') {
+            throw new RuntimeException('Please fill in every field before adding the rider.');
+        }
+        if (strlen($password) < 8 || !preg_match('/[^A-Za-z0-9]/', $password)) {
+            throw new RuntimeException('Password must be at least 8 characters and include at least one special character.');
+        }
+        if (!preg_match('/@[^@\s]+\.com$/i', $emailInput)) {
+            throw new RuntimeException('Enter a valid email address that includes @ and ends with .com.');
+        }
+        if (!preg_match("/^[\\p{L}][\\p{L} .'-]*$/u", $fullName)) {
+            throw new RuntimeException('Full Name may contain letters, spaces, apostrophes, periods, and hyphens only.');
+        }
+        if (!preg_match("/^[\\p{L}][\\p{L}._-]*$/u", $username)) {
+            throw new RuntimeException('Username must start with a letter and contain only letters, periods, underscores, and hyphens.');
+        }
+        if (!preg_match('/^[0-9]{10}$/', $phone)) {
+            throw new RuntimeException('Phone must contain exactly 10 digits.');
+        }
+        if (!preg_match("/^[\\p{L}][\\p{L} -]*$/u", $vehicleType)) {
+            throw new RuntimeException('Vehicle Type may contain letters, spaces, and hyphens only.');
         }
 
         $pdo->beginTransaction();
@@ -313,20 +332,41 @@ body {
 
     <div class="card" style="margin-bottom: 24px;">
         <h3>Add New Rider</h3>
+        <p>Enter the rider's real account details. Examples below are placeholders only and will not be submitted automatically.</p>
         <form method="POST">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="create_rider">
             <div class="rider-form-grid">
-                <label>Full Name<input type="text" name="full_name" required></label>
-                <label>Username<input type="text" name="username" required></label>
-                <label>Email<input type="email" name="email" required></label>
-                <label>Password<input type="password" name="password" required></label>
-                <label>Phone<input type="text" name="phone"></label>
-                <label>Vehicle Type<input type="text" name="vehicle_type" placeholder="e.g. Scooter"></label>
-                <label>License Number<input type="text" name="license_number"></label>
+                <label>Full Name
+                    <input type="text" name="full_name" maxlength="150" autocomplete="name" placeholder="e.g. Rahul Sharma" aria-describedby="rider-name-message" required>
+                    <small id="rider-name-message" role="status" aria-live="polite" style="display: none; color: #b91c1c;">Please enter a name using letters only; numbers are not allowed.</small>
+                </label>
+                <label>Username
+                    <input type="text" name="username" maxlength="100" autocomplete="username" placeholder="e.g. rahul.sharma" pattern="[A-Za-z](?:[A-Za-z]|[._]|-)*" title="Start with a letter; use letters, periods, underscores, or hyphens only." aria-describedby="rider-username-message" required>
+                    <small id="rider-username-message" role="status" aria-live="polite" style="display: none; color: #b91c1c;">Please enter a username using letters only; numbers are not allowed.</small>
+                </label>
+                <label>Email
+                    <input type="email" name="email" maxlength="150" autocomplete="email" placeholder="e.g. rahul@example.com" pattern=".+@.+[.]com" title="Enter a valid email address that includes @ and ends with .com." aria-describedby="rider-email-message" required>
+                    <small id="rider-email-message" role="status" aria-live="polite" style="display: none; color: #b91c1c;">Enter a valid email address that includes @ and ends with .com.</small>
+                </label>
+                <label>Password
+                    <input type="password" name="password" minlength="8" maxlength="72" autocomplete="new-password" placeholder="8+ characters and one special character" pattern="(?=.*[^A-Za-z0-9]).{8,72}" title="Use at least 8 characters and include at least one special character." aria-describedby="rider-password-message" required>
+                    <small id="rider-password-message" role="status" aria-live="polite" style="display: none; color: #b91c1c;">Password must be at least 8 characters and include at least one special character.</small>
+                </label>
+                <label>Phone
+                    <input type="tel" name="phone" maxlength="30" minlength="10" inputmode="numeric" pattern="[0-9]{10}" autocomplete="tel-national" placeholder="e.g. 9876543210" title="Enter exactly 10 digits." aria-describedby="rider-phone-message" required>
+                    <small id="rider-phone-message" role="status" aria-live="polite" style="display: none; color: #b91c1c;">Phone number can contain digits only; letters are not allowed.</small>
+                </label>
+                <label>Vehicle Type
+                    <input type="text" name="vehicle_type" maxlength="50" placeholder="e.g. Electric Scooter" pattern="[A-Za-z](?:[A-Za-z]| |-)*" title="Use letters, spaces, and hyphens only." aria-describedby="rider-vehicle-message" required>
+                    <small id="rider-vehicle-message" role="status" aria-live="polite" style="display: none; color: #b91c1c;">Please enter a vehicle type using letters only; numbers are not allowed.</small>
+                </label>
+                <label>License Number
+                    <input type="text" name="license_number" maxlength="100" placeholder="e.g. KA-01-2024-001234" required>
+                </label>
             </div>
             <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
-                <button type="submit" class="btn btn-primary">Add Rider</button>
+                <button type="submit" class="btn btn-primary" disabled>Add Rider</button>
             </div>
         </form>
     </div>
@@ -405,5 +445,66 @@ body {
         </table>
     </div>
 </div>
+
+<script>
+const riderNameInput = document.querySelector('input[name="full_name"]');
+const riderUsernameInput = document.querySelector('input[name="username"]');
+const riderPhoneInput = document.querySelector('input[name="phone"]');
+const riderVehicleInput = document.querySelector('input[name="vehicle_type"]');
+const riderNameMessage = document.getElementById('rider-name-message');
+const riderUsernameMessage = document.getElementById('rider-username-message');
+const riderPhoneMessage = document.getElementById('rider-phone-message');
+const riderVehicleMessage = document.getElementById('rider-vehicle-message');
+const riderEmailInput = document.querySelector('input[name="email"]');
+const riderEmailMessage = document.getElementById('rider-email-message');
+const riderPasswordInput = document.querySelector('input[name="password"]');
+const riderPasswordMessage = document.getElementById('rider-password-message');
+const riderForm = riderNameInput.form;
+const addRiderButton = riderForm.querySelector('button[type="submit"]');
+
+function updateAddRiderButton() {
+    addRiderButton.disabled = !riderForm.checkValidity()
+        || Array.from(riderForm.querySelectorAll('input[required]')).some(input => input.value.trim() === '');
+}
+
+riderForm.addEventListener('input', updateAddRiderButton);
+updateAddRiderButton();
+
+riderNameInput.addEventListener('input', () => {
+    const containsNumber = /\d/.test(riderNameInput.value);
+    riderNameInput.value = riderNameInput.value.replace(/[^\p{L} .'-]/gu, '');
+    riderNameMessage.style.display = containsNumber ? 'block' : 'none';
+});
+
+riderUsernameInput.addEventListener('input', () => {
+    const containsNumber = /\d/.test(riderUsernameInput.value);
+    riderUsernameInput.value = riderUsernameInput.value.replace(/[^\p{L}._-]/gu, '');
+    riderUsernameMessage.style.display = containsNumber ? 'block' : 'none';
+});
+
+riderPhoneInput.addEventListener('input', () => {
+    const containsNonDigit = /\D/.test(riderPhoneInput.value);
+    riderPhoneInput.value = riderPhoneInput.value.replace(/\D/g, '').slice(0, 10);
+    riderPhoneMessage.style.display = containsNonDigit ? 'block' : 'none';
+});
+
+riderVehicleInput.addEventListener('input', () => {
+    const containsNumber = /\d/.test(riderVehicleInput.value);
+    riderVehicleInput.value = riderVehicleInput.value.replace(/[^\p{L} -]/gu, '');
+    riderVehicleMessage.style.display = containsNumber ? 'block' : 'none';
+});
+
+riderEmailInput.addEventListener('input', () => {
+    const email = riderEmailInput.value.trim();
+    const hasValidShape = /^[^\s@]+@[^\s@]+\.com$/i.test(email);
+    riderEmailMessage.style.display = email !== '' && !hasValidShape ? 'block' : 'none';
+});
+
+riderPasswordInput.addEventListener('input', () => {
+    const password = riderPasswordInput.value;
+    const isValid = password.length >= 8 && /[^A-Za-z0-9]/.test(password);
+    riderPasswordMessage.style.display = password !== '' && !isValid ? 'block' : 'none';
+});
+</script>
 
 <?php require_once '../includes/footer.php'; ?>

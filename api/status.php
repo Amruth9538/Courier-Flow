@@ -36,7 +36,7 @@ $status = $input['status'] ?? '';
 $remarks = trim((string) ($input['remarks'] ?? ''));
 
 // Validate parcel ID and status
-$allowedStatuses = ['Pending', 'In Transit', 'Delivered', 'Cancelled'];
+$allowedStatuses = ['Pending', 'In Transit', 'Out for Delivery', 'Delivered', 'Failed Delivery', 'Cancelled'];
 
 if ($parcelId <= 0 || !is_string($status) || !in_array($status, $allowedStatuses, true)) {
     status_response(false, 'Invalid parcel ID or status', 400);
@@ -64,22 +64,42 @@ try {
 
     // Check that the logged-in rider is assigned to this parcel
     $riderStmt = $pdo->prepare("
-        SELECT id
+        SELECT id, is_online
         FROM riders
         WHERE user_id = ?
+        FOR UPDATE
     ");
     $riderStmt->execute([$userId]);
-    $riderId = (int) $riderStmt->fetchColumn();
+    $rider = $riderStmt->fetch(PDO::FETCH_ASSOC);
+    $riderId = (int) ($rider['id'] ?? 0);
 
     if (!$riderId || (int) $parcel['assigned_rider_id'] !== $riderId) {
         $pdo->rollBack();
         status_response(false, 'This parcel is not assigned to you', 403);
     }
 
+    $otherActiveStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM parcels
+        WHERE assigned_rider_id = ?
+          AND id <> ?
+          AND status NOT IN ('Delivered', 'Cancelled')
+    ");
+    $otherActiveStmt->execute([$riderId, $parcelId]);
+    if ((int) $otherActiveStmt->fetchColumn() > 0) {
+        $pdo->rollBack();
+        status_response(false, 'Complete your current parcel before updating another assignment', 409);
+    }
+
     // Avoid duplicate notifications for unchanged statuses
     if ($parcel['status'] === $status) {
         $pdo->commit();
         status_response(true, 'Parcel already has this status');
+    }
+
+    if (!can_transition_parcel_status((string) $parcel['status'], $status)) {
+        $pdo->rollBack();
+        status_response(false, 'Select only the next allowed parcel status', 409);
     }
 
     // Update parcel status
@@ -95,6 +115,67 @@ try {
             (parcel_id, status, remarks, created_by)
         VALUES (?, ?, ?, ?)
     ")->execute([$parcelId, $status, $remarks, $userId]);
+
+    if (in_array($status, ['Delivered', 'Cancelled'], true)) {
+        $activeStmt = $pdo->prepare("
+            SELECT COUNT(*)
+            FROM parcels
+            WHERE assigned_rider_id = ?
+              AND status NOT IN ('Delivered', 'Cancelled')
+        ");
+        $activeStmt->execute([$riderId]);
+        $activeCount = (int) $activeStmt->fetchColumn();
+        $waitingParcelId = null;
+
+        if ($activeCount === 0 && (int) $rider['is_online'] === 1) {
+            $waitingStmt = $pdo->prepare("
+                SELECT id
+                FROM parcels
+                WHERE assigned_rider_id IS NULL
+                  AND status = 'Pending'
+                ORDER BY created_at ASC, id ASC
+                LIMIT 1
+                FOR UPDATE
+            ");
+            $waitingStmt->execute();
+            $waitingParcelId = $waitingStmt->fetchColumn();
+        }
+
+        if ($waitingParcelId) {
+            $assignStmt = $pdo->prepare("
+                UPDATE parcels
+                SET assigned_rider_id = ?
+                WHERE id = ?
+                  AND assigned_rider_id IS NULL
+                  AND status = 'Pending'
+            ");
+            $assignStmt->execute([$riderId, $waitingParcelId]);
+
+            if ($assignStmt->rowCount() > 0) {
+                $pdo->prepare('UPDATE riders SET is_available = 0 WHERE id = ?')
+                    ->execute([$riderId]);
+                $waitingParcel = $pdo->prepare('SELECT customer_id, tracking_number FROM parcels WHERE id = ?');
+                $waitingParcel->execute([$waitingParcelId]);
+                $waitingDetails = $waitingParcel->fetch(PDO::FETCH_ASSOC);
+                if ($waitingDetails && !empty($waitingDetails['customer_id'])) {
+                    $pdo->prepare("
+                        INSERT INTO notifications (user_id, parcel_id, title, message, is_read)
+                        VALUES (?, ?, 'Rider Assigned', ?, 0)
+                    ")->execute([
+                        (int) $waitingDetails['customer_id'],
+                        (int) $waitingParcelId,
+                        'Your parcel ' . $waitingDetails['tracking_number'] . ' has been assigned to a delivery rider.'
+                    ]);
+                }
+            }
+        } else {
+            $pdo->prepare('UPDATE riders SET is_available = IF(is_online = 1, 1, 0) WHERE id = ?')
+                ->execute([$riderId]);
+        }
+    } else {
+        $pdo->prepare('UPDATE riders SET is_available = 0 WHERE id = ?')
+            ->execute([$riderId]);
+    }
 
     // Save activity log
     $pdo->prepare("
@@ -115,7 +196,9 @@ try {
         $messages = [
             'Pending' => 'Your parcel is pending.',
             'In Transit' => 'Your parcel is on the way.',
+            'Out for Delivery' => 'Your parcel is out for delivery.',
             'Delivered' => 'Your parcel has been delivered successfully.',
+            'Failed Delivery' => 'A delivery attempt was unsuccessful.',
             'Cancelled' => 'Your parcel has been cancelled.'
         ];
 

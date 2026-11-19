@@ -172,19 +172,48 @@ exit;
 
 // 处理包裹状态更新与凭证上传
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_parcel') {
-    verify_csrf();
-
     $parcel_id = (int)($_POST['parcel_id'] ?? 0);
     $status    = sanitize_string($_POST['status'] ?? '');
     $remarks   = sanitize_string($_POST['remarks'] ?? '');
 
-    // 验证包裹归属
-    $stmt = $pdo->prepare('SELECT id FROM parcels WHERE id = ? AND assigned_rider_id = ?');
-    $stmt->execute([$parcel_id, $rider_id]);
+    try {
+        verify_csrf();
+        if ($parcel_id <= 0) {
+            throw new RuntimeException('Invalid parcel ID.');
+        }
 
-    if ($stmt->fetch()) {
-        try {
-            $pdo->beginTransaction();
+        $pdo->beginTransaction();
+        $parcel_stmt = $pdo->prepare("
+            SELECT id, status, customer_id, tracking_number
+            FROM parcels
+            WHERE id = ? AND assigned_rider_id = ?
+            FOR UPDATE
+        ");
+        $parcel_stmt->execute([$parcel_id, $rider_id]);
+        $parcel_info = $parcel_stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$parcel_info) {
+            throw new RuntimeException('This parcel is not assigned to you.');
+        }
+
+        $old_status = (string) $parcel_info['status'];
+        if ($old_status === $status) {
+            throw new RuntimeException('The parcel already has this status.');
+        }
+        if (!can_transition_parcel_status($old_status, $status)) {
+            throw new RuntimeException('Select only the next allowed parcel status.');
+        }
+
+        $other_active_stmt = $pdo->prepare("
+            SELECT COUNT(*)
+            FROM parcels
+            WHERE assigned_rider_id = ?
+              AND id <> ?
+              AND status NOT IN ('Delivered', 'Cancelled')
+        ");
+        $other_active_stmt->execute([$rider_id, $parcel_id]);
+        if ((int) $other_active_stmt->fetchColumn() > 0) {
+            throw new RuntimeException('Complete your current parcel before updating another assignment.');
+        }
 
             $photo_path = null;
             if (isset($_FILES['delivery_photo']) && $_FILES['delivery_photo']['error'] === UPLOAD_ERR_OK) {
@@ -205,23 +234,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 }
             }
 
-            // 更新包裹状态
-            // Get the parcel's current status before updating it
-$old_status_stmt = $pdo->prepare("
-    SELECT status
-    FROM parcels
-    WHERE id = ?
-      AND assigned_rider_id = ?
-    FOR UPDATE
-");
-
-$old_status_stmt->execute([$parcel_id, $rider_id]);
-
-$old_status = $old_status_stmt->fetchColumn();
-
-// Update parcel status
-$pdo->prepare('UPDATE parcels SET status = ? WHERE id = ?')
-    ->execute([$status, $parcel_id]);
+            $pdo->prepare('UPDATE parcels SET status = ? WHERE id = ? AND assigned_rider_id = ?')
+                ->execute([$status, $parcel_id, $rider_id]);
 
 // Check whether this rider has any active shipments
 $active_stmt = $pdo->prepare("
@@ -236,7 +250,7 @@ $active_stmt->execute([$rider_id]);
 $active_count = (int)$active_stmt->fetchColumn();
 
 // Rider is available only when no active shipments remain
-$is_available = ($active_count === 0) ? 1 : 0;
+$is_available = ($active_count === 0 && !empty($rider['is_online'])) ? 1 : 0;
 
 // Update rider availability
 $availability_stmt = $pdo->prepare("
@@ -291,6 +305,20 @@ if ($is_available === 1 && !empty($rider['is_online'])) {
             ");
 
             $busy_stmt->execute([$rider_id]);
+
+            $waiting_customer_stmt = $pdo->prepare('SELECT customer_id, tracking_number FROM parcels WHERE id = ?');
+            $waiting_customer_stmt->execute([$waiting_parcel_id]);
+            $waiting_parcel = $waiting_customer_stmt->fetch(PDO::FETCH_ASSOC);
+            if ($waiting_parcel && !empty($waiting_parcel['customer_id'])) {
+                $pdo->prepare("
+                    INSERT INTO notifications (user_id, parcel_id, title, message, is_read)
+                    VALUES (?, ?, 'Rider Assigned', ?, 0)
+                ")->execute([
+                    (int) $waiting_parcel['customer_id'],
+                    (int) $waiting_parcel_id,
+                    'Your parcel ' . $waiting_parcel['tracking_number'] . ' has been assigned to a delivery rider.'
+                ]);
+            }
         }
     }
 }
@@ -303,15 +331,6 @@ if ($is_available === 1 && !empty($rider['is_online'])) {
 // ==========================================
 
 // Find the customer and tracking number for this parcel
-$customer_stmt = $pdo->prepare("
-    SELECT customer_id, tracking_number
-    FROM parcels
-    WHERE id = ?
-");
-
-$customer_stmt->execute([$parcel_id]);
-$parcel_info = $customer_stmt->fetch(PDO::FETCH_ASSOC);
-
 // Only registered customers receive website notifications
 if (
     $parcel_info &&
@@ -334,6 +353,14 @@ if (
             'Your parcel ' . $tracking_number .
             ' is on the way to its destination.';
 
+    } elseif ($status === 'Out for Delivery') {
+
+        $notification_title = 'Parcel Out for Delivery';
+
+        $notification_message =
+            'Your parcel ' . $tracking_number .
+            ' is out for delivery.';
+
     } elseif ($status === 'Delivered') {
 
         $notification_title = 'Parcel Delivered';
@@ -341,6 +368,14 @@ if (
         $notification_message =
             'Your parcel ' . $tracking_number .
             ' has been delivered successfully.';
+
+    } elseif ($status === 'Failed Delivery') {
+
+        $notification_title = 'Delivery Attempt Unsuccessful';
+
+        $notification_message =
+            'A delivery attempt for parcel ' . $tracking_number .
+            ' was unsuccessful.';
 
     } elseif ($status === 'Cancelled') {
 
@@ -375,12 +410,11 @@ if (
 
             $pdo->commit();
             $message = 'Parcel status updated successfully.';
-        } catch (Exception $e) {
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
             $pdo->rollBack();
-            $error = 'Failed to update status: ' . $e->getMessage();
         }
-    } else {
-        $error = 'Unauthorized parcel action.';
+        $error = 'Failed to update status: ' . $e->getMessage();
     }
 }
 
@@ -868,13 +902,17 @@ box-shadow: 0 4px 15px rgba(15, 23, 42, 0.06);
                                 </span>
                             </td>
                             <td style="text-align: center;">
-                                <button type="button"
-                                        class="btn btn-primary btn-update-status"
-                                        data-parcel-id="<?= $p['id'] ?>"
-                                        data-tracking="<?= htmlspecialchars($p['tracking_number'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                        data-status="<?= htmlspecialchars($p['status'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                                    🔄 Update Status
-                                </button>
+                                                <?php if (!in_array($p['status'], ['Delivered', 'Cancelled'], true)): ?>
+                                                    <button type="button"
+                                                            class="btn btn-primary btn-update-status"
+                                                            data-parcel-id="<?= $p['id'] ?>"
+                                                            data-tracking="<?= htmlspecialchars($p['tracking_number'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                                            data-status="<?= htmlspecialchars($p['status'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                                                        🔄 Update Status
+                                                    </button>
+                                                <?php else: ?>
+                                                    <span>Complete</span>
+                                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -899,9 +937,11 @@ box-shadow: 0 4px 15px rgba(15, 23, 42, 0.06);
             <div style="margin-bottom: 16px;">
                 <label class="form-label">Parcel Status</label>
                 <select id="modal_status" name="status" class="form-select" required style="width:100%; padding: 8px 12px; margin-top: 4px;">
-                    <option value="Pending">Pending</option>
+                    <option value="">Select next status</option>
                     <option value="In Transit">In Transit</option>
+                    <option value="Out for Delivery">Out for Delivery</option>
                     <option value="Delivered">Delivered</option>
+                    <option value="Failed Delivery">Failed Delivery</option>
                     <option value="Cancelled">Cancelled</option>
                 </select>
             </div>
@@ -1336,12 +1376,28 @@ body {
 document.addEventListener('DOMContentLoaded', function () {
     const statusModal = document.getElementById('statusModal');
     const btnCloseModal = document.getElementById('btn-close-status-modal');
+    const statusSelect = document.getElementById('modal_status');
+    const statusTransitions = {
+        Pending: ['In Transit', 'Cancelled'],
+        'In Transit': ['Out for Delivery', 'Cancelled'],
+        'Out for Delivery': ['Delivered', 'Failed Delivery', 'Cancelled'],
+        'Failed Delivery': ['Out for Delivery', 'Cancelled']
+    };
 
     document.querySelectorAll('.btn-update-status').forEach(button => {
         button.addEventListener('click', function () {
             document.getElementById('modal_parcel_id').value = this.dataset.parcelId;
             document.getElementById('modal_tracking_no').textContent = this.dataset.tracking;
-            document.getElementById('modal_status').value = this.dataset.status;
+            const allowedStatuses = statusTransitions[this.dataset.status] || [];
+            Array.from(statusSelect.options).forEach(option => {
+                if (option.value) {
+                    option.hidden = !allowedStatuses.includes(option.value);
+                    option.disabled = !allowedStatuses.includes(option.value);
+                }
+            });
+            statusSelect.value = '';
+            statusSelect.disabled = allowedStatuses.length === 0;
+            statusModal.querySelector('button[type="submit"]').disabled = allowedStatuses.length === 0;
 
             statusModal.style.display = 'flex';
         });

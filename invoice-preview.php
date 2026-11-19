@@ -22,6 +22,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['preview_draft'] ?? '') ===
     $draft = true;
     $shipper = is_array($_POST['shipper'] ?? null) ? $_POST['shipper'] : [];
     $receiver = is_array($_POST['receiver'] ?? null) ? $_POST['receiver'] : [];
+    if (strtoupper(trim((string) ($shipper['country'] ?? ''))) !== 'INDIA') {
+        http_response_code(422);
+        exit('International shipments must originate in INDIA.');
+    }
+    if (strtoupper(trim((string) ($receiver['country'] ?? ''))) === 'INDIA') {
+        http_response_code(422);
+        exit('International shipments cannot be delivered to INDIA.');
+    }
+    if (!is_array($_POST['commodities'] ?? null) || count($_POST['commodities']) < 1) {
+        http_response_code(422);
+        exit('Add at least one commodity before previewing the invoice.');
+    }
+    $currency = strtoupper(trim((string) ($_POST['currency'] ?? '')));
+    if (!in_array($currency, ['INR', 'USD', 'EUR', 'GBP', 'AED'], true)) {
+        http_response_code(422);
+        exit('Select a supported invoice currency.');
+    }
     $shipment = [
         'tracking_no' => 'Draft preview (not booked)',
         'shipper_name' => $shipper['name'] ?? '',
@@ -40,12 +57,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['preview_draft'] ?? '') ===
         ])),
         'receiver_email' => $receiver['email'] ?? '',
         'receiver_mobile' => $receiver['mobile'] ?? '',
-        'currency' => $_POST['currency'] ?? 'INR',
-        'contents' => $_POST['contents'] ?? '',
+        'currency' => $currency,
+        'contents' => is_scalar($_POST['contents'] ?? '') ? (string) $_POST['contents'] : '',
         'total_value' => 0,
         'created_at' => date('Y-m-d H:i:s'),
     ];
-    foreach (($_POST['commodities'] ?? []) as $commodity) {
+    foreach ($_POST['commodities'] as $commodity) {
         if (!is_array($commodity)) {
             continue;
         }
@@ -57,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['preview_draft'] ?? '') ===
     }
 } else {
     $tracking = strtoupper(trim((string) ($_GET['tracking'] ?? '')));
-    $sql = 'SELECT * FROM shipments WHERE tracking_no = ?';
+    $sql = "SELECT * FROM shipments WHERE tracking_no = ? AND shipment_type = 'international'";
     if ($role !== 'admin') {
         $sql .= ' AND user_id = ?';
     }

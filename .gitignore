@@ -1,8 +1,11 @@
 # Local secrets — copy database.example.php to database.php
 /database.php
 
-# Uploaded delivery proofs and other user files
-/uploads/
+# Uploaded delivery proofs and other user files; retain invoice execution guard.
+/uploads/*
+!/uploads/invoices/
+/uploads/invoices/*
+!/uploads/invoices/.htaccess
 
 # Editor / OS
 .vscode/

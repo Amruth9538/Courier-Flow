@@ -135,6 +135,22 @@ function sanitize_string($value): string
     return trim(htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'));
 }
 
+function can_transition_parcel_status(string $currentStatus, string $nextStatus): bool
+{
+    if ($currentStatus === $nextStatus) {
+        return true;
+    }
+
+    $transitions = [
+        'Pending' => ['In Transit', 'Cancelled'],
+        'In Transit' => ['Out for Delivery', 'Cancelled'],
+        'Out for Delivery' => ['Delivered', 'Failed Delivery', 'Cancelled'],
+        'Failed Delivery' => ['Out for Delivery', 'Cancelled'],
+    ];
+
+    return in_array($nextStatus, $transitions[$currentStatus] ?? [], true);
+}
+
 function redirect(string $path): void
 {
     header('Location: ' . $path);

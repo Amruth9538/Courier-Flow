@@ -109,9 +109,16 @@ CREATE TABLE IF NOT EXISTS shipments (
     export_reason VARCHAR(100) NOT NULL DEFAULT 'Gifts',
     gst_invoice TINYINT(1) NOT NULL DEFAULT 0,
     gstin VARCHAR(30) DEFAULT NULL,
+    gst_legal_name VARCHAR(80) DEFAULT NULL,
+    gst_amount DECIMAL(5,2) DEFAULT NULL,
+    gst_igst DECIMAL(5,2) DEFAULT NULL,
     gst_details TEXT DEFAULT NULL,
     ship_method ENUM('Schedule a Pick Up', 'Drop Off at Carrier') NOT NULL DEFAULT 'Drop Off at Carrier',
     pickup_datetime DATETIME DEFAULT NULL,
+    pickup_slot VARCHAR(20) DEFAULT NULL,
+    pickup_contact_name VARCHAR(50) DEFAULT NULL,
+    pickup_contact_phone VARCHAR(10) DEFAULT NULL,
+    pickup_instructions VARCHAR(200) DEFAULT NULL,
     own_invoice_path VARCHAR(255) DEFAULT NULL,
     total_value DECIMAL(12,2) NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -142,6 +149,8 @@ CREATE TABLE IF NOT EXISTS shipment_commodities (
     qty DECIMAL(10,2) NOT NULL,
     unit_price DECIMAL(12,2) NOT NULL,
     total DECIMAL(12,2) NOT NULL,
+    unit ENUM('PCS', 'KG', 'BOX', 'SET') NOT NULL DEFAULT 'PCS',
+    country_of_origin VARCHAR(100) NOT NULL DEFAULT 'INDIA',
     CONSTRAINT fk_shipment_commodities_shipment FOREIGN KEY (shipment_id)
         REFERENCES shipments(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

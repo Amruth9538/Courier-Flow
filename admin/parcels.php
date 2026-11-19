@@ -345,25 +345,57 @@ $assigned_rider_id = !empty($_POST['assigned_rider_id']) ? (int) $_POST['assigne
             throw new RuntimeException('Please provide valid parcel details.');
         }
 
-        if ($assigned_rider_id !== null) {
-            $riderCheck = $pdo->prepare("SELECT r.id FROM riders r JOIN users u ON u.id = r.user_id WHERE r.id = ? AND u.role = 'rider'");
-            $riderCheck->execute([$assigned_rider_id]);
-            if (!$riderCheck->fetch()) {
-                throw new RuntimeException('Selected rider was not found.');
-            }
-        }
-
-        $current = $pdo->prepare('SELECT recipient_address, assigned_rider_id FROM parcels WHERE id = ?');
+        $pdo->beginTransaction();
+        $current = $pdo->prepare('SELECT recipient_address, assigned_rider_id FROM parcels WHERE id = ? FOR UPDATE');
         $current->execute([$parcel_id]);
         $existing = $current->fetch();
         if (!$existing) {
             throw new RuntimeException('Parcel not found.');
         }
 
+        $existingRiderId = (int) ($existing['assigned_rider_id'] ?? 0);
+        $riderChanged = $existingRiderId !== (int) ($assigned_rider_id ?? 0);
+        if ($assigned_rider_id !== null) {
+            $riderCheck = $pdo->prepare("SELECT r.id FROM riders r JOIN users u ON u.id = r.user_id WHERE r.id = ? AND u.role = 'rider' FOR UPDATE");
+            $riderCheck->execute([$assigned_rider_id]);
+            if (!$riderCheck->fetch()) {
+                throw new RuntimeException('Selected rider was not found.');
+            }
+
+            if ($riderChanged && !in_array($status, ['Delivered', 'Cancelled'], true)) {
+                $activeParcels = $pdo->prepare("
+                    SELECT COUNT(*)
+                    FROM parcels
+                    WHERE assigned_rider_id = ?
+                      AND id <> ?
+                      AND status NOT IN ('Delivered', 'Cancelled')
+                ");
+                $activeParcels->execute([$assigned_rider_id, $parcel_id]);
+                if ((int) $activeParcels->fetchColumn() > 0) {
+                    throw new RuntimeException('This rider already has an active parcel. The next parcel can be assigned after delivery.');
+                }
+            }
+        }
+
         $addressChanged = $existing['recipient_address'] !== $recipient_address;
-        $riderChanged = (int) ($existing['assigned_rider_id'] ?? 0) !== (int) ($assigned_rider_id ?? 0);
         $stmt = $pdo->prepare('UPDATE parcels SET recipient_name = ?, recipient_phone = ?, parcel_type = ?, weight_kg = ?, recipient_address = ?, assigned_rider_id = ?, status = ?, recipient_latitude = CASE WHEN ? THEN NULL ELSE recipient_latitude END, recipient_longitude = CASE WHEN ? THEN NULL ELSE recipient_longitude END, recipient_geocoded_at = CASE WHEN ? THEN NULL ELSE recipient_geocoded_at END WHERE id = ?');
         $stmt->execute([$recipient_name, $recipient_phone, $parcel_type, $weight, $recipient_address, $assigned_rider_id, $status, $addressChanged, $addressChanged, $addressChanged, $parcel_id]);
+        if ($assigned_rider_id !== null && !in_array($status, ['Delivered', 'Cancelled'], true)) {
+            $pdo->prepare('UPDATE riders SET is_available = 0 WHERE id = ?')->execute([$assigned_rider_id]);
+        }
+        if ($riderChanged && $existingRiderId > 0) {
+            $remainingActive = $pdo->prepare("
+                SELECT COUNT(*)
+                FROM parcels
+                WHERE assigned_rider_id = ?
+                  AND status NOT IN ('Delivered', 'Cancelled')
+            ");
+            $remainingActive->execute([$existingRiderId]);
+            if ((int) $remainingActive->fetchColumn() === 0) {
+                $pdo->prepare('UPDATE riders SET is_available = IF(is_online = 1, 1, 0) WHERE id = ?')
+                    ->execute([$existingRiderId]);
+            }
+        }
         if ($addressChanged || $riderChanged) {
             // A different rider or destination needs a fresh A-to-C plan and
             // must not show the previous rider's actual GPS history.
@@ -439,8 +471,12 @@ if (in_array($status, ['Delivered', 'Cancelled'], true)
         }
     }
 }
+        $pdo->commit();
         $message = 'Parcel updated successfully.';
     } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         $error = $e->getMessage();
     }
 }
@@ -478,12 +514,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     }
 }
 
-// 获取所有包裹列表
+// Show only parcels with a calculated route ETA within the local 15-minute window.
 $stmt_parcels = $pdo->query("
-    SELECT p.*, u.full_name as rider_name
+    SELECT p.*, u.full_name as rider_name, route.duration_min AS eta_minutes,
+           CASE
+               WHEN p.recipient_address LIKE '%Indiranagar%' THEN 'Indiranagar'
+               WHEN p.recipient_address LIKE '%Koramangala%' THEN 'Koramangala'
+               WHEN p.recipient_address LIKE '%Jayanagar%' THEN 'Jayanagar'
+               WHEN p.recipient_address LIKE '%Malleshwaram%' THEN 'Malleshwaram'
+               WHEN p.recipient_address LIKE '%Basavanagudi%' THEN 'Basavanagudi'
+               WHEN p.recipient_address LIKE '%HSR Layout%' THEN 'HSR Layout'
+               WHEN p.recipient_address LIKE '%Rajajinagar%' THEN 'Rajajinagar'
+               ELSE 'Bengaluru'
+           END AS city_area
     FROM parcels p
     LEFT JOIN riders r ON p.assigned_rider_id = r.id
     LEFT JOIN users u ON r.user_id = u.id
+    INNER JOIN delivery_route_snapshots route
+        ON route.parcel_id = p.id
+       AND route.duration_min IS NOT NULL
+       AND route.duration_min <= 15
     ORDER BY p.id DESC
 ");
 $parcels = $stmt_parcels->fetchAll();
@@ -1010,15 +1060,18 @@ body {
     <div class="panel card">
         <h2 class="card-title" style="font-size: 18px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 20px;">
     <i class="bi bi-list-check" style="color: #2563eb; margin-right: 10px;"></i>
-    Parcel List
+    Bangalore City Parcels List (15-Minute Delivery)
 </h2>
+        <p>Only parcels with a calculated route ETA of 15 minutes or less are shown. Parcels without a qualifying route estimate are not listed. Existing parcel records are unchanged.</p>
         <table class="data-table" style="width: 100%; border-collapse: separate; border-spacing: 0;">
             <thead>
                 <tr>
                     <th>Tracking #</th>
                     <th>Recipient</th>
                     <th>Type / Weight</th>
+                    <th>City / Area</th>
                     <th>Delivery Address</th>
+                    <th>Route ETA</th>
                     <th>Assigned Rider</th>
                     <th>Status</th>
                     <th>Action</th>
@@ -1027,8 +1080,8 @@ body {
             <tbody>
                 <?php if (empty($parcels)): ?>
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 24px; color: #94a3b8;">
-                            No parcels found.
+                        <td colspan="9" style="text-align: center; padding: 24px; color: #94a3b8;">
+                            No parcels currently have a calculated route ETA of 15 minutes or less.
                         </td>
                     </tr>
                 <?php else: ?>
@@ -1043,9 +1096,11 @@ body {
                                 <?= htmlspecialchars($p['parcel_type'] ?: 'Standard', ENT_QUOTES, 'UTF-8') ?><br>
                                 <small style="color: #64748b;"><?= $p['weight_kg'] > 0 ? $p['weight_kg'] . ' kg' : '-' ?></small>
                             </td>
+                            <td><?= htmlspecialchars($p['city_area'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td style="font-size: 13px; max-width: 280px; color: #0f172a;">
                                 <?= htmlspecialchars($p['recipient_address'], ENT_QUOTES, 'UTF-8') ?>
                             </td>
+                            <td><?= number_format((float) $p['eta_minutes'], 1) ?> min</td>
                             <td>
                                 <?= htmlspecialchars($p['rider_name'] ?: 'Unassigned', ENT_QUOTES, 'UTF-8') ?>
                             </td>

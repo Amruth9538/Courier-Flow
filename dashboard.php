@@ -14,10 +14,57 @@ $stats['offline'] = $pdo->query("SELECT COUNT(*) AS total FROM riders r JOIN use
 $stats['parcels'] = $pdo->query('SELECT COUNT(*) AS total FROM parcels')->fetchColumn();
 $stats['delivered'] = $pdo->query("SELECT COUNT(*) AS total FROM parcels WHERE status = 'Delivered'")->fetchColumn();
 $stats['pending'] = $pdo->query("SELECT COUNT(*) AS total FROM parcels WHERE status = 'Pending'")->fetchColumn();
+$stats['cityParcels'] = 0;
+if ($pdo->query("SHOW TABLES LIKE 'delivery_route_snapshots'")->fetchColumn()) {
+    $stats['cityParcels'] = (int) $pdo->query(
+        'SELECT COUNT(DISTINCT p.id)
+         FROM parcels p
+         INNER JOIN delivery_route_snapshots route
+             ON route.parcel_id = p.id
+            AND route.duration_min IS NOT NULL
+            AND route.duration_min <= 15'
+    )->fetchColumn();
+}
 $shipmentSchemaReady = (bool) $pdo->query("SHOW TABLES LIKE 'shipments'")->fetchColumn();
-$stats['shipments'] = $shipmentSchemaReady
-    ? (int) $pdo->query('SELECT COUNT(*) FROM shipments')->fetchColumn()
-    : 0;
+$shipmentTypeReady = false;
+$stats['domestic'] = 0;
+$stats['international'] = 0;
+$stats['shipmentDelivered'] = 0;
+$stats['shipmentPending'] = 0;
+if ($shipmentSchemaReady) {
+    $shipmentColumns = $pdo->query('SHOW COLUMNS FROM shipments')->fetchAll(PDO::FETCH_COLUMN);
+    $shipmentTypeReady = in_array('shipment_type', $shipmentColumns, true);
+    if ($shipmentTypeReady) {
+        $stats['domestic'] = (int) $pdo->query("SELECT COUNT(*) FROM shipments WHERE shipment_type = 'domestic'")->fetchColumn();
+        $stats['international'] = (int) $pdo->query("SELECT COUNT(*) FROM shipments WHERE shipment_type = 'international'")->fetchColumn();
+        $stats['shipmentDelivered'] = (int) $pdo->query("SELECT COUNT(*) FROM shipments WHERE status = 'Delivered'")->fetchColumn();
+        $stats['shipmentPending'] = (int) $pdo->query("SELECT COUNT(*) FROM shipments WHERE status = 'Booked'")->fetchColumn();
+    } else {
+        $stats['international'] = (int) $pdo->query('SELECT COUNT(*) FROM shipments')->fetchColumn();
+        $stats['shipmentPending'] = (int) $pdo->query("SELECT COUNT(*) FROM shipments WHERE status = 'Booked'")->fetchColumn();
+    }
+}
+$stats['deliveredTotal'] = (int) $stats['delivered'] + $stats['shipmentDelivered'];
+$stats['pendingTotal'] = (int) $stats['pending'] + $stats['shipmentPending'];
+
+$trackingSearch = substr(trim((string) ($_GET['tracking'] ?? '')), 0, 50);
+$trackingResults = [];
+if ($trackingSearch !== '') {
+    $parcelTrackingStmt = $pdo->prepare(
+        'SELECT tracking_number AS tracking_no, status, \'Legacy parcel\' AS shipment_type
+         FROM parcels WHERE tracking_number = ? LIMIT 1'
+    );
+    $parcelTrackingStmt->execute([$trackingSearch]);
+    $trackingResults = $parcelTrackingStmt->fetchAll();
+    if ($shipmentSchemaReady) {
+        $shipmentTrackingSql = $shipmentTypeReady
+            ? 'SELECT tracking_no, status, shipment_type FROM shipments WHERE tracking_no = ? LIMIT 1'
+            : "SELECT tracking_no, status, 'international' AS shipment_type FROM shipments WHERE tracking_no = ? LIMIT 1";
+        $shipmentTrackingStmt = $pdo->prepare($shipmentTrackingSql);
+        $shipmentTrackingStmt->execute([$trackingSearch]);
+        $trackingResults = array_merge($trackingResults, $shipmentTrackingStmt->fetchAll());
+    }
+}
 
 $riders = $pdo->query("SELECT r.*, u.full_name, u.email FROM riders r JOIN users u ON u.id = r.user_id WHERE u.role = 'rider' ORDER BY r.is_online DESC, u.full_name ASC")->fetchAll();
 $parcels = $pdo->query('SELECT p.*, u.full_name AS rider_name FROM parcels p LEFT JOIN riders r ON r.id = p.assigned_rider_id LEFT JOIN users u ON u.id = r.user_id ORDER BY p.created_at DESC LIMIT 10')->fetchAll();
@@ -100,8 +147,8 @@ body {
 
     <div class="stat-card admin-stat-card">
         <div class="admin-stat-icon">📦</div>
-        <h3>Pending Parcels</h3>
-        <p><?= (int) $stats['pending'] ?></p>
+        <h3>Pending</h3>
+        <p><?= (int) $stats['pendingTotal'] ?></p>
     </div>
     <!-- Total Parcels Card -->
 <div class="stat-card admin-stat-card">
@@ -114,23 +161,69 @@ body {
 <div class="stat-card admin-stat-card">
     <div class="admin-stat-icon">✅</div>
     <h3>Delivered Parcels</h3>
-    <p><?= (int) $stats['delivered'] ?></p>
+    <p><?= (int) $stats['deliveredTotal'] ?></p>
 </div>
+
+<a class="stat-card admin-stat-card" href="admin/parcels.php">
+    <div class="admin-stat-icon">🏙️</div>
+    <h3>Bangalore City Parcels</h3>
+    <p><?= (int) $stats['cityParcels'] ?></p>
+</a>
+
+<a class="stat-card admin-stat-card" href="parcel-list.php">
+    <div class="admin-stat-icon">📦</div>
+    <h3>Domestic Parcels</h3>
+    <p><?= (int) $stats['domestic'] ?></p>
+</a>
 
 <a class="stat-card admin-stat-card" href="shipment-list.php">
     <div class="admin-stat-icon">🚚</div>
-    <h3>Booked Shipments</h3>
-    <p><?= (int) $stats['shipments'] ?></p>
+    <h3>International Shipments</h3>
+    <p><?= (int) $stats['international'] ?></p>
 </a>
 
 </div>
 <div class="shipment-buttons" style="margin:0 0 20px;">
 <?php if ($shipmentSchemaReady): ?>
-    <a class="btn btn-primary" href="create-shipment.php">Create Shipment</a>
-    <a class="btn btn-secondary" href="shipment-list.php">View Shipments</a>
+    <a class="btn btn-primary" href="parcels-management.php">Parcels Management (Domestic)</a>
+    <a class="btn btn-primary" href="create-shipment.php">Create Shipment (International)</a>
+    <a class="btn btn-secondary" href="parcel-list.php">Domestic Parcels</a>
+    <a class="btn btn-secondary" href="shipment-list.php">International Shipments</a>
+    <a class="btn btn-secondary" href="admin/parcels.php">Bangalore City Parcels</a>
 <?php else: ?>
     <span class="shipment-note">Import database_shipments.sql to enable shipment booking.</span>
 <?php endif; ?>
+</div>
+<div class="panel" style="margin-bottom:20px">
+    <h2>Track a Booking</h2>
+    <form method="get" class="shipment-inline">
+        <label class="shipment-field" for="dashboard-tracking">Tracking number
+            <input id="dashboard-tracking" name="tracking" value="<?= htmlspecialchars($trackingSearch, ENT_QUOTES, 'UTF-8') ?>" maxlength="50" placeholder="Enter a domestic or international tracking number">
+        </label>
+        <button class="btn btn-primary" type="submit">Search</button>
+    </form>
+    <?php if ($trackingSearch !== ''): ?>
+        <?php if ($trackingResults): ?>
+            <div class="shipment-table-wrap" style="margin-top:12px">
+                <table class="admin-modern-table">
+                    <thead><tr><th>Tracking</th><th>Booking Type</th><th>Status</th><th>Open</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($trackingResults as $trackingResult): ?>
+                        <?php $trackingUrl = $trackingResult['shipment_type'] === 'domestic' ? 'parcel-list.php?search=' : ($trackingResult['shipment_type'] === 'international' ? 'shipment-list.php?search=' : 'admin/parcels.php?search='); ?>
+                        <tr>
+                            <td><?= htmlspecialchars($trackingResult['tracking_no'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= htmlspecialchars(ucfirst($trackingResult['shipment_type']), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= htmlspecialchars($trackingResult['status'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><a href="<?= $trackingUrl . rawurlencode($trackingResult['tracking_no']) ?>">View</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <p class="shipment-note" role="status">No booking found for that tracking number.</p>
+        <?php endif; ?>
+    <?php endif; ?>
 </div>
 <!-- Modern Admin Live Rider Tracking -->
 <div class="panel admin-map-panel">

@@ -49,14 +49,29 @@ $isCustomer = ($_SESSION['role'] ?? '') === 'customer';
             <a href="<?= $assetBase ?>admin/parcels.php"
                class="nav-link <?= $currentPage === 'parcels.php' ? 'active' : '' ?>">
                 <i class="bi bi-box-seam-fill"></i>
-                <span>Parcels</span>
+                <span>Bangalore City Parcels</span>
             </a>
 
             <?php if ($shipmentModuleReady): ?>
+            <a href="<?= $assetBase ?>parcels-management.php"
+               class="nav-link <?= $currentPage === 'parcels-management.php' ? 'active' : '' ?>">
+                <i class="bi bi-box-seam"></i>
+                <span>Parcels Management (Domestic)</span>
+            </a>
+            <a href="<?= $assetBase ?>parcel-list.php"
+               class="nav-link <?= $currentPage === 'parcel-list.php' ? 'active' : '' ?>">
+                <i class="bi bi-boxes"></i>
+                <span>Domestic Parcels</span>
+            </a>
+            <a href="<?= $assetBase ?>create-shipment.php"
+               class="nav-link <?= $currentPage === 'create-shipment.php' ? 'active' : '' ?>">
+                <i class="bi bi-plus-circle"></i>
+                <span>Create Shipment (International)</span>
+            </a>
             <a href="<?= $assetBase ?>shipment-list.php"
                class="nav-link <?= $currentPage === 'shipment-list.php' ? 'active' : '' ?>">
                 <i class="bi bi-truck"></i>
-                <span>Shipments</span>
+                <span>International Shipments</span>
             </a>
             <?php endif; ?>
 
@@ -78,12 +93,22 @@ $isCustomer = ($_SESSION['role'] ?? '') === 'customer';
             <a href="<?= $assetBase ?>create-shipment.php"
                class="nav-link <?= $currentPage === 'create-shipment.php' ? 'active' : '' ?>">
                 <i class="bi bi-plus-circle"></i>
-                <span>Create Shipment</span>
+                <span>Create Shipment (International)</span>
             </a>
             <a href="<?= $assetBase ?>shipment-list.php"
                class="nav-link <?= $currentPage === 'shipment-list.php' ? 'active' : '' ?>">
                 <i class="bi bi-truck"></i>
-                <span>My Shipments</span>
+                <span>My International Shipments</span>
+            </a>
+            <a href="<?= $assetBase ?>parcels-management.php"
+               class="nav-link <?= $currentPage === 'parcels-management.php' ? 'active' : '' ?>">
+                <i class="bi bi-box-seam"></i>
+                <span>Parcels Management (Domestic)</span>
+            </a>
+            <a href="<?= $assetBase ?>parcel-list.php"
+               class="nav-link <?= $currentPage === 'parcel-list.php' ? 'active' : '' ?>">
+                <i class="bi bi-boxes"></i>
+                <span>My Domestic Parcels</span>
             </a>
             <?php endif; ?>
 
@@ -94,6 +119,19 @@ $isCustomer = ($_SESSION['role'] ?? '') === 'customer';
                 <i class="bi bi-house-door-fill"></i>
                 <span>Dashboard</span>
             </a>
+
+            <?php if ($shipmentModuleReady): ?>
+            <a href="<?= $assetBase ?>parcel-list.php"
+               class="nav-link <?= $currentPage === 'parcel-list.php' ? 'active' : '' ?>">
+                <i class="bi bi-boxes"></i>
+                <span>Assigned Domestic Parcels</span>
+            </a>
+            <a href="<?= $assetBase ?>shipment-list.php"
+               class="nav-link <?= $currentPage === 'shipment-list.php' ? 'active' : '' ?>">
+                <i class="bi bi-truck"></i>
+                <span>Assigned International Shipments</span>
+            </a>
+            <?php endif; ?>
 
             <a href="<?= $assetBase ?>profile.php"
                class="nav-link <?= $currentPage === 'profile.php' ? 'active' : '' ?>">

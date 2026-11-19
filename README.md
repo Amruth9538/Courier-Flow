@@ -23,7 +23,8 @@ CourierFlow is a native PHP web application for managing parcel deliveries. Admi
 - Admin dashboard, rider directory, parcel management, and delivery reports
 - Customer/admin shipment booking, saved address book, commodities, package-weight calculations, and printable invoice preview
 - Rider accounts, online/offline state, assigned delivery list, and browser GPS updates
-- Parcel status history and delivery proof photo uploads
+- Sequential rider dispatch: each rider receives one active parcel at a time; the oldest pending parcel is assigned after the current delivery is completed
+- Parcel status history and delivery proof photo uploads. Rider updates follow Pending → In Transit → Out for Delivery → Delivered; a failed delivery can be retried, and active deliveries may be cancelled.
 - Public tracking page showing parcel status, rider position, and available planned/actual route history
 - Malaysia address geocoding through OpenStreetMap Nominatim
 - Leaflet maps using OpenStreetMap tiles
@@ -120,7 +121,7 @@ In sequence:
 1. An admin or rider signs in. PHP validates the session and role before rendering protected pages or accepting protected API requests. A recipient can visit `track.php` without signing in and provide a tracking number.
 2. The admin creates and manages parcels and riders. Parcel/rider data is stored in MySQL/MariaDB.
 3. When online, the rider dashboard requests browser location access and sends coordinates to `api/location.php`. PHP updates the rider's current position and records location history in the database.
-4. Rider status changes are sent to `api/status.php`; delivery proof images, when uploaded, are saved under `uploads/proofs/` and status/history data is stored in the database.
+4. Rider status changes are submitted through the rider dashboard or the `api/status.php` endpoint. The server validates each next status and the one-active-parcel rule; delivery proof images, when uploaded, are saved under `uploads/proofs/` and status/history data is stored in the database.
 5. The tracking page requests `api/route-history.php`, which reads parcel status and available location/route data. The page renders available details and locations on a Leaflet map.
 6. When a relevant lookup or route endpoint is used and configured, PHP calls Nominatim for Malaysia address geocoding or OpenRouteService for road directions. Map tiles are fetched by the browser from OpenStreetMap.
 
@@ -148,6 +149,9 @@ This describes the current implementation rather than a claim of continuous real
 | `includes/` | Shared page fragments |
 | `database.sql` | MySQL/MariaDB schema and initial admin/rider records |
 | `database_shipments.sql` | Additive schema for shipment bookings, addresses, packages, commodities, and status history |
+| `database_shipments_validation.sql` | Adds GST, pickup-contact, and commodity-origin fields to existing shipment installations |
+| `database_split.sql` | Adds domestic/international separation, domestic rate slabs, rider assignment, and Customs Clearance status |
+| `database_split_samples.sql` | Optional idempotent demo data for one domestic and one international booking |
 | `database.example.php` | Local/server database configuration template |
 | `track.php` | Public parcel tracking page |
 | `uploads/proofs/` | Runtime destination for delivery proof images (not included as app code) |
@@ -191,18 +195,32 @@ This describes the current implementation rather than a claim of continuous real
 4. Start **Apache** and **MySQL** in the XAMPP Control Panel.
 5. Import `database.sql` into MySQL using phpMyAdmin (`http://localhost/phpmyadmin`) or the MySQL command line. The script creates the `parcel_delivery_system` database and its initial admin/rider records. Do not rely on `install.php`: it is not part of the tracked release.
 6. Import `database_shipments.sql` into the same database. It creates the shipment tables with `CREATE TABLE IF NOT EXISTS` and does not drop existing tables or shipment data.
-7. Ensure upload directories exist and are writable by Apache:
+7. For an existing shipment installation, also import `database_shipments_validation.sql` to add GST, pickup, and commodity fields used by strict booking validation.
+8. Import `database_split.sql` to separate domestic and international bookings, create domestic rates, and add the international Customs Clearance status. Existing shipments are classified as international.
+9. Optionally import `database_split_samples.sql` to seed one domestic and one international example booking. It attaches records to the first admin account; the script can be rerun without creating duplicate samples.
+10. Ensure upload directories exist and are writable by Apache:
 
    ```powershell
    New-Item -ItemType Directory -Force uploads\proofs
    New-Item -ItemType Directory -Force uploads\invoices
    ```
 
-8. Open `http://localhost/parcel_delivery_system/`.
+11. Open `http://localhost/parcel_delivery_system/`.
 
-### Shipment booking
+### Domestic and international bookings
 
-After importing `database_shipments.sql`, a logged-in customer or administrator can open `create-shipment.php` to book a shipment. Use **Shipment List** to search and view saved bookings. Customers only see their own shipments; admins can view all shipments. The form calculates volumetric and chargeable weight in the browser, then recalculates and validates the values on the server. Invoice uploads accept PDF files up to 2 MB. Payments are not collected or processed by this module.
+After importing `database_shipments.sql` and `database_split.sql` (plus `database_shipments_validation.sql` for an existing installation), a logged-in customer or administrator can book domestic parcels at `parcels-management.php` and international shipments at `create-shipment.php`. Domestic bookings require India-to-India addresses and use `DM` tracking numbers. International bookings require an Indian shipper and non-Indian receiver and use `IN` tracking numbers. Neither form accepts a user-selected shipment type; each save handler sets it on the server.
+
+Use `parcel-list.php` for domestic bookings and `shipment-list.php` for international bookings. Both lists support tracking search, status filtering, and date filtering. Customers see their own bookings, admins see all, and riders can only access bookings assigned to their rider profile. Admins can advance international shipments through Booked, Picked Up, Customs Clearance, In Transit, Out for Delivery, and Delivered; status transitions are recorded in history.
+
+Domestic rates are read from `domestic_rates`; administrators can edit rate slabs directly in that table. The domestic form calculates chargeable weight as the greater of actual and volumetric weight. International invoice uploads accept PDF files up to 2 MB and are protected by `uploads/invoices/.htaccess`. Browser input filtering and validation are backed by server-side validation.
+
+#### Manual separation checks
+
+1. Sign in as an admin or customer and book a domestic parcel with India as both sender and receiver country. Confirm a `DM` tracking number appears in `parcel-list.php`.
+2. Try to submit an India-to-India shipment through `create-shipment.php` by tampering with the request. The server must reject it.
+3. Try to submit a foreign receiver country through `parcels-management.php` by tampering with the hidden country value or POST body. The server must reject it.
+4. Book an international shipment with India as the shipper and a foreign receiver. Confirm an `IN` tracking number appears only in `shipment-list.php`.
 
 The initial accounts created by the checked-in SQL are:
 
@@ -210,8 +228,6 @@ The initial accounts created by the checked-in SQL are:
 | --- | --- | --- |
 | Admin | `admin@example.com` | `password` |
 | Rider | `rider@example.com` | `password` |
-
-These are demo credentials only. Change them before exposing the app to a network.
 
 ### Optional routing key
 
@@ -363,7 +379,7 @@ S3 is used here as a private release artifact store. The current PHP upload code
 - The tracked `database.sql` schema defines only the `admin` and `rider` roles and does not define the `customer_id`, `notifications`, or OTP tables referenced by some customer-related pages and code. Customer registration/dashboard, customer notifications, and OTP-related flows therefore need matching schema migrations before they can be relied on.
 - The rider dashboard requests road routes from `api/route.php` using the rider's live GPS location and the active parcel destination. It refreshes after meaningful movement or one minute and displays distance and estimated travel time. Live road directions require an OpenRouteService API key; route errors are shown in the dashboard.
 - The database schema seeds demo credentials. Change them before deployment and treat all location, recipient, and proof-photo data as sensitive.
-- Shipment booking requires running the additive [`database_shipments.sql`](database_shipments.sql) migration after the base schema. Uploaded shipment invoices are stored in `uploads/invoices/` on the application host.
+- Shipment booking requires running the additive [`database_shipments.sql`](database_shipments.sql) migration after the base schema. Existing shipment installations should also run [`database_shipments_validation.sql`](database_shipments_validation.sql). Uploaded shipment invoices are stored in `uploads/invoices/` on the application host.
 - The single EC2 instance is a learning/demo deployment. It has no automatic scaling, managed database, multi-AZ failover, or built-in S3 photo storage.
 
 ## Screenshots

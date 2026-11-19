@@ -26,6 +26,11 @@ body.shipment-page.shipment-app-page {
 .shipment-page .shipment-header a.shipment-btn { color: #fff; }
 .shipment-page .shipment-header a.shipment-btn.secondary { color: #26364c; }
 .shipment-shell { width: min(1500px, 100%); margin: 0 auto; }
+.parcel-address-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.parcel-address-grid .shipment-card { grid-column: auto; }
+.parcel-address-grid .shipment-card:last-child { grid-column: auto; }
+#parcel-booking .shipment-total { align-items: baseline; }
+#parcel-booking [data-cod-field][hidden] { display: none; }
 .shipment-header, .shipment-section-heading, .shipment-actions, .shipment-inline, .shipment-toggle-row {
     display: flex;
     align-items: center;
@@ -136,6 +141,7 @@ body.shipment-page.shipment-app-page {
 @media (max-width: 720px) {
     body.shipment-page { padding: 14px 12px 28px; }
     .shipment-grid { grid-template-columns: 1fr; }
+    .parcel-address-grid { grid-template-columns: 1fr; }
     .shipment-card:last-child { grid-column: auto; }
     .shipment-package-row, .shipment-commodity-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .shipment-header { align-items: flex-start; flex-direction: column; }

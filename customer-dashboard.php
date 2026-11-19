@@ -86,17 +86,68 @@ $parcelStmt->execute([$customerId]);
 $customerParcels = $parcelStmt->fetchAll(PDO::FETCH_ASSOC);
 $shipmentSchemaReady = (bool) $pdo->query("SHOW TABLES LIKE 'shipments'")->fetchColumn();
 $customerShipments = [];
+$customerDomesticCount = 0;
+$customerInternationalCount = 0;
+$customerShipmentDeliveredCount = 0;
+$customerShipmentPendingCount = 0;
+$shipmentTypeReady = false;
 if ($shipmentSchemaReady) {
-    $shipmentStmt = $pdo->prepare("
-        SELECT tracking_no, status, receiver_name, receiver_city, receiver_country,
-               pieces, chg_wt, total_value, currency, created_at
-        FROM shipments
-        WHERE user_id = ?
-        ORDER BY created_at DESC, id DESC
-        LIMIT 100
-    ");
+    $shipmentColumns = $pdo->query('SHOW COLUMNS FROM shipments')->fetchAll(PDO::FETCH_COLUMN);
+    $shipmentTypeReady = in_array('shipment_type', $shipmentColumns, true);
+    $shipmentSql = $shipmentTypeReady
+        ? "SELECT tracking_no, status, receiver_name, receiver_city, receiver_country,
+                  pieces, chg_wt, total_value, currency, created_at, shipment_type
+           FROM shipments WHERE user_id = ? AND shipment_type = 'international'
+           ORDER BY created_at DESC, id DESC LIMIT 100"
+        : "SELECT tracking_no, status, receiver_name, receiver_city, receiver_country,
+                  pieces, chg_wt, total_value, currency, created_at,
+                  'international' AS shipment_type
+           FROM shipments WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 100";
+    $shipmentStmt = $pdo->prepare($shipmentSql);
     $shipmentStmt->execute([$customerId]);
     $customerShipments = $shipmentStmt->fetchAll(PDO::FETCH_ASSOC);
+    if ($shipmentTypeReady) {
+        $countStmt = $pdo->prepare("SELECT shipment_type, status, COUNT(*) AS total FROM shipments WHERE user_id = ? GROUP BY shipment_type, status");
+        $countStmt->execute([$customerId]);
+        foreach ($countStmt->fetchAll(PDO::FETCH_ASSOC) as $countRow) {
+            if ($countRow['shipment_type'] === 'domestic') {
+                $customerDomesticCount += (int) $countRow['total'];
+            } elseif ($countRow['shipment_type'] === 'international') {
+                $customerInternationalCount += (int) $countRow['total'];
+            }
+            if ($countRow['status'] === 'Delivered') {
+                $customerShipmentDeliveredCount += (int) $countRow['total'];
+            }
+            if ($countRow['status'] === 'Booked') {
+                $customerShipmentPendingCount += (int) $countRow['total'];
+            }
+        }
+    } else {
+        $customerInternationalCount = count($customerShipments);
+        $pendingStmt = $pdo->prepare("SELECT COUNT(*) FROM shipments WHERE user_id = ? AND status = 'Booked'");
+        $pendingStmt->execute([$customerId]);
+        $customerShipmentPendingCount = (int) $pendingStmt->fetchColumn();
+        $deliveredStmt = $pdo->prepare("SELECT COUNT(*) FROM shipments WHERE user_id = ? AND status = 'Delivered'");
+        $deliveredStmt->execute([$customerId]);
+        $customerShipmentDeliveredCount = (int) $deliveredStmt->fetchColumn();
+    }
+}
+$customerDeliveredTotal = count(array_filter($customerParcels, static fn (array $item): bool => $item['status'] === 'Delivered')) + $customerShipmentDeliveredCount;
+$customerPendingTotal = count(array_filter($customerParcels, static fn (array $item): bool => $item['status'] === 'Pending')) + $customerShipmentPendingCount;
+$trackingSearch = substr(trim((string) ($_GET['tracking'] ?? '')), 0, 50);
+$trackingResult = null;
+if ($trackingSearch !== '') {
+    $trackingStmt = $pdo->prepare('SELECT tracking_number AS tracking_no, status, \'Legacy parcel\' AS shipment_type FROM parcels WHERE tracking_number = ? AND customer_id = ? LIMIT 1');
+    $trackingStmt->execute([$trackingSearch, $customerId]);
+    $trackingResult = $trackingStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    if ($shipmentSchemaReady) {
+        $shipmentTrackSql = $shipmentTypeReady
+            ? 'SELECT tracking_no, status, shipment_type FROM shipments WHERE tracking_no = ? AND user_id = ? LIMIT 1'
+            : "SELECT tracking_no, status, 'international' AS shipment_type FROM shipments WHERE tracking_no = ? AND user_id = ? LIMIT 1";
+        $shipmentTrackStmt = $pdo->prepare($shipmentTrackSql);
+        $shipmentTrackStmt->execute([$trackingSearch, $customerId]);
+        $trackingResult = $shipmentTrackStmt->fetch(PDO::FETCH_ASSOC) ?: $trackingResult;
+    }
 }
 ?>
 
@@ -130,21 +181,59 @@ if ($shipmentSchemaReady) {
         <p>Track your deliveries and manage your parcel information.</p>
         <?php if ($shipmentSchemaReady): ?>
             <div class="shipment-buttons">
-                <a class="btn btn-primary" href="create-shipment.php">Create Shipment</a>
-                <a class="btn btn-secondary" href="shipment-list.php">View Shipment List (<?= count($customerShipments) ?>)</a>
+                <a class="btn btn-primary" href="parcels-management.php">Parcels Management (Domestic)</a>
+                <a class="btn btn-primary" href="create-shipment.php">Create Shipment (International)</a>
+                <a class="btn btn-secondary" href="parcel-list.php">Domestic Parcels (<?= $customerDomesticCount ?>)</a>
+                <a class="btn btn-secondary" href="shipment-list.php">International Shipments (<?= $customerInternationalCount ?>)</a>
             </div>
+            <section class="shipment-section" style="margin-top:16px">
+                <h2>Track a Booking</h2>
+                <form method="get" action="customer-dashboard.php" class="shipment-inline">
+                    <label class="shipment-field" for="customer-tracking">Tracking number
+                        <input id="customer-tracking" name="tracking" value="<?= htmlspecialchars($trackingSearch, ENT_QUOTES, 'UTF-8') ?>" maxlength="50" placeholder="Domestic or international tracking number">
+                    </label>
+                    <button class="shipment-btn" type="submit">Search</button>
+                </form>
+                <?php if ($trackingSearch !== ''): ?>
+                    <?php if ($trackingResult): ?>
+                        <?php
+                        $trackingListUrl = $trackingResult['shipment_type'] === 'domestic'
+                            ? 'parcel-list.php?search=' . rawurlencode($trackingResult['tracking_no'])
+                            : ($trackingResult['shipment_type'] === 'international'
+                                ? 'shipment-list.php?search=' . rawurlencode($trackingResult['tracking_no'])
+                                : 'track.php?tracking=' . rawurlencode($trackingResult['tracking_no']));
+                        ?>
+                        <p role="status" style="margin-bottom:0">
+                            <?= htmlspecialchars(ucfirst($trackingResult['shipment_type']), ENT_QUOTES, 'UTF-8') ?> booking
+                            <?= htmlspecialchars($trackingResult['tracking_no'], ENT_QUOTES, 'UTF-8') ?>:
+                            <?= htmlspecialchars($trackingResult['status'], ENT_QUOTES, 'UTF-8') ?>.
+                            <a href="<?= htmlspecialchars($trackingListUrl, ENT_QUOTES, 'UTF-8') ?>">View booking</a>
+                        </p>
+                    <?php else: ?>
+                        <p class="shipment-note" role="status">No booking found for that tracking number.</p>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </section>
         <?php else: ?>
             <p class="shipment-note">Shipment booking is not set up yet. Import <code>database_shipments.sql</code> to enable it.</p>
         <?php endif; ?>
 
         <?php if ($shipmentSchemaReady): ?><section class="shipment-section" style="margin-top:20px">
-            <h2>My Shipments (<?= count($customerShipments) ?>)</h2>
+            <h2>Shipment Summary</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><h3>Domestic Parcels</h3><p><?= $customerDomesticCount ?></p></div>
+                <div class="stat-card"><h3>International Shipments</h3><p><?= $customerInternationalCount ?></p></div>
+                <div class="stat-card"><h3>Delivered</h3><p><?= $customerDeliveredTotal ?></p></div>
+                <div class="stat-card"><h3>Pending</h3><p><?= $customerPendingTotal ?></p></div>
+            </div>
+            <h2>My International Shipments (<?= $customerInternationalCount ?>)</h2>
             <div class="shipment-table-wrap">
                 <table class="shipment-table">
                     <thead><tr><th>Tracking</th><th>Status</th><th>Recipient</th><th>Destination</th><th>Pieces</th><th>Chargeable wt.</th><th>Value</th><th>Booked</th><th>Invoice</th></tr></thead>
                     <tbody>
-                    <?php if (!$customerShipments): ?><tr><td colspan="9">No shipments booked yet.</td></tr><?php endif; ?>
-                    <?php foreach ($customerShipments as $shipment): ?>
+                    <?php $internationalShipments = array_values(array_filter($customerShipments, static fn (array $item): bool => ($item['shipment_type'] ?? 'international') === 'international')); ?>
+                    <?php if (!$internationalShipments): ?><tr><td colspan="9">No international shipments booked yet.</td></tr><?php endif; ?>
+                    <?php foreach ($internationalShipments as $shipment): ?>
                         <tr>
                             <td><a href="shipment-success.php?tracking=<?= urlencode($shipment['tracking_no']) ?>"><?= htmlspecialchars($shipment['tracking_no'], ENT_QUOTES, 'UTF-8') ?></a></td>
                             <td><?= htmlspecialchars($shipment['status'], ENT_QUOTES, 'UTF-8') ?></td>
