@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gstin: /^[0-9A-Z]+$/,
         pan: /^[A-Z0-9]+$/,
         commodity: /^[A-Za-z0-9 ,.\-]+$/,
-        'invoice-ref': /^[A-Za-z0-9 /-]+$/
+        'invoice-ref': /^[A-Za-z0-9 ._\/#()-]+$/
     };
 
     function sanitizeByRule(input) {
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             gstin: /[^A-Za-z0-9]/g,
             pan: /[^A-Za-z0-9]/g,
             commodity: /[^A-Za-z0-9 ,.\-]/g,
-            'invoice-ref': /[^A-Za-z0-9 /-]/g
+            'invoice-ref': /[^A-Za-z0-9 ._\/#()-]/g
         };
         const before = input.value;
         if (rule === 'decimal') {
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rule === 'alnum' && !inputRulePatterns.alnum.test(value)) return 'Use letters, numbers, and spaces only.';
         if (rule === 'address' && !inputRulePatterns.address.test(value)) return 'Use letters, numbers, spaces, and , . - / # ( ) only.';
         if (rule === 'commodity' && !inputRulePatterns.commodity.test(value)) return 'Use letters, numbers, spaces, commas, dots, or hyphens only.';
-        if (rule === 'invoice-ref' && !inputRulePatterns['invoice-ref'].test(value)) return 'Use letters, numbers, spaces, hyphens, or slashes only.';
+        if (rule === 'invoice-ref' && !inputRulePatterns['invoice-ref'].test(value)) return 'Use letters, numbers, spaces, dots, underscores, slashes, #, parentheses, or hyphens only.';
         if (rule === 'email' && (value.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))) return 'Enter a valid email address.';
         if (rule === 'gstin' && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(value)) return 'Enter a valid 15-character GSTIN.';
         if (rule === 'pan' && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value)) return 'Enter a PAN in AAAAA9999A format.';
@@ -406,7 +406,16 @@ document.addEventListener('DOMContentLoaded', () => {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({ ...data, csrf_token: csrf })
         });
-        const result = await response.json();
+        const responseText = await response.text();
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch {
+            if (response.redirected || response.url.includes('login.php')) {
+                throw new Error('Your session has expired. Please sign in again, then retry saving the address.');
+            }
+            throw new Error(`The address service returned an unexpected response (HTTP ${response.status}). Please try again.`);
+        }
         if (!response.ok || !result.success) throw new Error(result.message || 'Address book request failed.');
         return result;
     }

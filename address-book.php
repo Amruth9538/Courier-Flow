@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/config.php';
-require_auth();
 header('Content-Type: application/json; charset=utf-8');
 
 function addressBookResponse(bool $success, string $message, array $data = [], int $status = 200): void
@@ -8,6 +7,10 @@ function addressBookResponse(bool $success, string $message, array $data = [], i
     http_response_code($status);
     echo json_encode(['success' => $success, 'message' => $message] + $data);
     exit;
+}
+
+if (!is_logged_in()) {
+    addressBookResponse(false, 'Your session has expired. Please sign in again, then retry saving the address.', [], 401);
 }
 
 $role = (string) ($_SESSION['role'] ?? '');

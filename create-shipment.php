@@ -267,7 +267,7 @@ require_once __DIR__ . '/includes/header.php';
                     <div class="shipment-field"><label for="pieces">No Of Pcs <span>*</span></label><input id="pieces" name="pieces" type="text" inputmode="numeric" data-rule="numbers" maxlength="2" min="1" max="99" value="<?= $v('pieces', '1') ?>" required><small class="shipment-required">Enter a number from 1 to 99.</small></div>
                     <div class="shipment-field"><label for="carrier">Carrier <span>*</span></label><select id="carrier" name="carrier" required><option>Self</option><option>Other</option></select></div>
                     <div class="shipment-field"><label for="service">Service <span>*</span></label><select id="service" name="service" required><option>Express Saver</option><option>Standard</option><option>Economy</option></select></div>
-                    <div class="shipment-field"><label for="manual-invoice">Manual Invoice No</label><input id="manual-invoice" name="manual_invoice_no" value="<?= $v('manual_invoice_no') ?>" maxlength="30" data-rule="invoice-ref"><small class="shipment-required">Use letters, numbers, spaces, hyphens, or slashes.</small></div>
+                    <div class="shipment-field"><label for="manual-invoice">Manual Invoice No</label><input id="manual-invoice" name="manual_invoice_no" value="<?= $v('manual_invoice_no') ?>" maxlength="30" data-rule="invoice-ref"><small class="shipment-required">Use letters, numbers, spaces, dots, underscores, slashes, #, parentheses, or hyphens.</small></div>
                     <div class="shipment-field"><label for="reference-number">Reference Number</label><input id="reference-number" name="reference_number" value="<?= $v('reference_number') ?>" maxlength="30" data-rule="alnum"><small class="shipment-required">Use letters, numbers, and spaces only.</small></div>
                     <div class="shipment-field"><label for="currency">Currency <span>*</span></label><select id="currency" name="currency" required><?php foreach (['INR', 'USD', 'EUR', 'GBP', 'AED'] as $currency): ?><option <?= $v('currency', 'INR') === $currency ? 'selected' : '' ?>><?= $h($currency) ?></option><?php endforeach; ?></select></div>
                     <div class="shipment-field"><label for="rate-fetch-type">Rate Fetch Type</label><select id="rate-fetch-type" name="rate_fetch_type"><option>Auto Contract Rate Plan</option><option>Manual</option></select></div>
@@ -397,5 +397,5 @@ document.getElementById('own-invoice-toggle').addEventListener('change', functio
     document.getElementById('preview-type').disabled = this.checked;
 });
 </script>
-<script src="assets/js/shipment.js"></script>
+<script src="assets/js/shipment.js?v=<?= (int) filemtime(__DIR__ . '/assets/js/shipment.js') ?>"></script>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

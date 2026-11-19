@@ -326,7 +326,7 @@ try {
         throw new RuntimeException('Select a valid carrier and service.');
     }
     $manualInvoiceNo = shipmentInput('manual_invoice_no', 30);
-    shipmentRequirePattern($manualInvoiceNo, '/^[A-Za-z0-9 /-]*$/', 'Manual invoice number contains invalid characters.', true);
+    shipmentRequirePattern($manualInvoiceNo, '/^[A-Za-z0-9 ._\/#()-]*$/', 'Manual invoice number may contain letters, numbers, spaces, dots, underscores, slashes, #, parentheses, or hyphens only.', true);
     $referenceNumber = shipmentInput('reference_number', 30);
     shipmentRequirePattern($referenceNumber, '/^[A-Za-z0-9 ]*$/', 'Reference number contains invalid characters.', true);
     $contents = shipmentInput('contents', 100);
