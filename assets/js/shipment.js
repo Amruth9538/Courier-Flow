@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toast = document.getElementById('shipment-toast');
     const invoiceInput = document.getElementById('own-invoice');
     const invoiceHint = document.getElementById('invoice-error');
+    let toastTimer;
     const stateCodes = {
         'andaman and nicobar islands': '35', 'andhra pradesh': '37', 'arunachal pradesh': '12',
         assam: '18', bihar: '10', chandigarh: '04', chhattisgarh: '22', 'dadra and nagar haveli and daman and diu': '26',
@@ -42,6 +43,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[char]));
+    function showToast(message, type = 'error') {
+        window.clearTimeout(toastTimer);
+        toast.textContent = message;
+        toast.className = `shipment-toast${message ? ` shipment-toast--${type}` : ''}`;
+        if (message) {
+            toastTimer = window.setTimeout(() => {
+                toast.textContent = '';
+                toast.className = 'shipment-toast';
+            }, 6000);
+        }
+    }
+
     invoiceInput.addEventListener('change', () => {
         const file = invoiceInput.files[0];
         invoiceHint.textContent = '';
@@ -402,6 +415,17 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', async () => {
             const type = button.dataset.saveAddress;
             const prefix = type === 'shipper' ? 'shipper' : 'receiver';
+            const addressInputs = [...form.querySelectorAll(`[name^="${prefix}["]`)]
+                .filter((input) => !['hidden', 'checkbox'].includes(input.type));
+            const invalidInputs = addressInputs.filter((input) =>
+                (input.required || input.value.trim() !== '') && !validateField(input)
+            );
+            if (invalidInputs.length) {
+                showToast('Complete all required address fields and correct any invalid values before saving.', 'error');
+                invalidInputs[0].focus();
+                return;
+            }
+
             const address = {};
             form.querySelectorAll(`[name^="${prefix}["]`).forEach((input) => {
                 const match = input.name.match(/^\w+\[([^\]]+)\]$/);
@@ -409,11 +433,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             address.type = type;
             address.is_default = form.querySelector(`[name="${prefix}[is_default]"]`).checked ? '1' : '0';
+            button.disabled = true;
+            showToast(`Saving ${type === 'shipper' ? 'sender' : 'recipient'} address...`, 'success');
             try {
                 await addressRequest({ action: 'save', address: JSON.stringify(address) });
-                toast.textContent = `${type === 'shipper' ? 'Shipper' : 'Receiver'} address saved.`;
+                showToast(`${type === 'shipper' ? 'Sender' : 'Recipient'} address saved successfully.`, 'success');
             } catch (error) {
-                toast.textContent = error.message;
+                showToast(`Address was not saved: ${error.message}`, 'error');
+            } finally {
+                button.disabled = false;
             }
         });
     });
@@ -439,7 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     result.addresses.map((address) => `<option value="${Number(address.id)}">${escapeHtml(address.name)} — ${escapeHtml(address.address_line1)}${Number(address.is_default) ? ' (Default)' : ''}</option>`).join('');
                 addressDialog.showModal();
             } catch (error) {
-                toast.textContent = error.message;
+                showToast(error.message, 'error');
             }
         });
     });
@@ -457,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             addressDialog.close();
         } catch (error) {
-            toast.textContent = error.message;
+            showToast(error.message, 'error');
         }
     });
 
@@ -467,10 +495,10 @@ document.addEventListener('DOMContentLoaded', () => {
             await addressRequest({ action: 'delete', id: addressPicker.value });
             addressPicker.selectedIndex = 0;
             addressPicker.querySelector('option[value=""]')?.remove();
-            toast.textContent = 'Saved address deleted.';
+            showToast('Saved address deleted successfully.', 'success');
             addressDialog.close();
         } catch (error) {
-            toast.textContent = error.message;
+            showToast(error.message, 'error');
         }
     });
 
@@ -737,7 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             errors[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
             errors[0].focus({ preventScroll: true });
-            toast.textContent = 'Please correct the required or invalid fields before submitting.';
+            showToast('Please correct the required or invalid fields before submitting.', 'error');
         }
     });
 

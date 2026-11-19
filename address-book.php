@@ -24,7 +24,6 @@ $allowedFields = [
 $requiredFields = [
     'name', 'country', 'postal_code', 'state', 'state_code', 'city', 'sub_urb',
     'address_line1', 'address_line2', 'phone_type', 'country_code', 'mobile',
-    'identification_type', 'identification_number',
 ];
 
 try {
@@ -80,6 +79,9 @@ try {
     if (!is_array($address) || !in_array($address['type'] ?? '', ['shipper', 'receiver'], true)) {
         addressBookResponse(false, 'Invalid address data.', [], 422);
     }
+    if ($address['type'] === 'shipper') {
+        $requiredFields = array_merge($requiredFields, ['identification_type', 'identification_number']);
+    }
 
     $values = [];
     $maxLengths = [
@@ -106,18 +108,28 @@ try {
                 addressBookResponse(false, 'Latitude and longitude must be numbers.', [], 422);
             }
         }
-        $values[$field] = $value === '' ? null : $value;
+        $values[$field] = $value === ''
+            ? (in_array($field, ['identification_type', 'identification_number'], true) ? '' : null)
+            : $value;
     }
     if (!filter_var($values['email'] ?? '', FILTER_VALIDATE_EMAIL) && !empty($values['email'])) {
         addressBookResponse(false, 'Enter a valid address email.', [], 422);
     }
-    if (!in_array($values['country'], ['INDIA', 'UNITED STATES', 'UNITED KINGDOM', 'AUSTRALIA', 'CANADA'], true)
+    if (!in_array($values['country'], ['INDIA', 'UNITED STATES', 'UNITED KINGDOM', 'AUSTRALIA', 'CANADA', 'UNITED ARAB EMIRATES'], true)
         || !in_array($values['phone_type'], ['Mobile', 'Landline'], true)
         || !preg_match('/^\+[0-9]{1,4}$/', (string) $values['country_code'])) {
         addressBookResponse(false, 'Select a valid country, phone type, and calling code.', [], 422);
     }
-    if ($values['country'] === 'INDIA' && !preg_match('/^\d{6}$/', (string) $values['postal_code'])) {
-        addressBookResponse(false, 'India postal codes must contain six digits.', [], 422);
+    $postalPatterns = [
+        'INDIA' => '/^[1-9][0-9]{5}$/',
+        'UNITED STATES' => '/^[0-9]{5}$/',
+        'UNITED KINGDOM' => '/^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$/i',
+        'AUSTRALIA' => '/^[0-9]{4}$/',
+        'CANADA' => '/^[A-Z][0-9][A-Z] ?[0-9][A-Z][0-9]$/i',
+        'UNITED ARAB EMIRATES' => '/^[0-9]{5}$/',
+    ];
+    if (!preg_match($postalPatterns[$values['country']], (string) $values['postal_code'])) {
+        addressBookResponse(false, 'Postal code does not match the selected country.', [], 422);
     }
     foreach (['latitude' => [-90, 90], 'longitude' => [-180, 180]] as $coordinate => [$minimum, $maximum]) {
         if ((float) $values[$coordinate] < $minimum || (float) $values[$coordinate] > $maximum) {

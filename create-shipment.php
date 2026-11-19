@@ -116,11 +116,6 @@ function renderAddressCard(string $type, array $countries, array $idTypes, array
             <input type="hidden" name="<?= $prefix ?>[is_default]" value="0">
             <label class="shipment-check shipment-full"><input type="checkbox" name="<?= $prefix ?>[is_default]" value="1" <?= shipmentOldChecked($oldInput, $prefix . '[is_default]') ? 'checked' : '' ?>> Make Default Address</label>
             <div class="shipment-field">
-                <label for="<?= $prefix ?>-company">Company</label>
-                <input id="<?= $prefix ?>-company" name="<?= $prefix ?>[company]" value="<?= $field('company') ?>" maxlength="80" data-rule="alnum">
-                <small class="shipment-required">Letters, numbers, and spaces only.</small>
-            </div>
-            <div class="shipment-field">
                 <label for="<?= $prefix ?>-country">Country/Territory <span>*</span></label>
                 <?php if ($shipper): ?>
                     <input id="<?= $prefix ?>-country" value="🇮🇳 INDIA" readonly aria-readonly="true">
@@ -199,12 +194,12 @@ function renderAddressCard(string $type, array $countries, array $idTypes, array
                 <small class="shipment-required">Enter a valid email address.</small>
             </div>
             <div class="shipment-field">
-                <label for="<?= $prefix ?>-phone-type">Phone Type</label>
-                <select id="<?= $prefix ?>-phone-type" name="<?= $prefix ?>[phone_type]"><option>Mobile</option><option>Landline</option></select>
+                <label for="<?= $prefix ?>-phone-type">Phone Type <span>*</span></label>
+                <select id="<?= $prefix ?>-phone-type" name="<?= $prefix ?>[phone_type]" required><option>Mobile</option><option>Landline</option></select>
             </div>
             <div class="shipment-field">
-                <label for="<?= $prefix ?>-country-code">Country Code</label>
-                <select id="<?= $prefix ?>-country-code" name="<?= $prefix ?>[country_code]"><?php foreach (['+91', '+1', '+44', '+61', '+971'] as $code): ?><option <?= shipmentFormValue($oldInput, $prefix . '[country_code]', $defaultCode) === $code ? 'selected' : '' ?>><?= $code ?></option><?php endforeach; ?></select>
+                <label for="<?= $prefix ?>-country-code">Country Code <span>*</span></label>
+                <select id="<?= $prefix ?>-country-code" name="<?= $prefix ?>[country_code]" required><?php foreach (['+91', '+1', '+44', '+61', '+971'] as $code): ?><option <?= shipmentFormValue($oldInput, $prefix . '[country_code]', $defaultCode) === $code ? 'selected' : '' ?>><?= $code ?></option><?php endforeach; ?></select>
             </div>
             <div class="shipment-field full">
                 <label for="<?= $prefix ?>-mobile">Mobile/Cell No <span>*</span></label>
@@ -259,7 +254,7 @@ require_once __DIR__ . '/includes/header.php';
     <?php if (!$shipmentSchemaReady): ?>
         <div class="shipment-error">Shipment tables are not set up yet. Import <code>database_shipments.sql</code> into the parcel_delivery_system database, then reload this page.</div>
     <?php endif; ?>
-    <div id="shipment-toast" class="shipment-toast" role="status" aria-live="polite"></div>
+    <div id="shipment-toast" class="shipment-toast" role="status" aria-live="polite" aria-atomic="true"></div>
     <form id="shipment-form" action="save-shipment.php" method="post" enctype="multipart/form-data" novalidate>
         <?= csrf_field() ?>
         <div class="shipment-grid">
@@ -270,7 +265,7 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="shipment-fields">
                     <div class="shipment-field"><label for="package-type">Package Type <span>*</span></label><select id="package-type" name="package_type" required><option <?= $v('package_type', 'Non Docs') === 'Non Docs' ? 'selected' : '' ?>>Non Docs</option><option <?= $v('package_type') === 'Docs' ? 'selected' : '' ?>>Docs</option></select></div>
                     <div class="shipment-field"><label for="pieces">No Of Pcs <span>*</span></label><input id="pieces" name="pieces" type="text" inputmode="numeric" data-rule="numbers" maxlength="2" min="1" max="99" value="<?= $v('pieces', '1') ?>" required><small class="shipment-required">Enter a number from 1 to 99.</small></div>
-                    <div class="shipment-field"><label for="carrier">Carrier <span>*</span></label><select id="carrier" name="carrier" required><option>Self</option><option>CourierFlow</option><option>Other</option></select></div>
+                    <div class="shipment-field"><label for="carrier">Carrier <span>*</span></label><select id="carrier" name="carrier" required><option>Self</option><option>Other</option></select></div>
                     <div class="shipment-field"><label for="service">Service <span>*</span></label><select id="service" name="service" required><option>Express Saver</option><option>Standard</option><option>Economy</option></select></div>
                     <div class="shipment-field"><label for="manual-invoice">Manual Invoice No</label><input id="manual-invoice" name="manual_invoice_no" value="<?= $v('manual_invoice_no') ?>" maxlength="30" data-rule="invoice-ref"><small class="shipment-required">Use letters, numbers, spaces, hyphens, or slashes.</small></div>
                     <div class="shipment-field"><label for="reference-number">Reference Number</label><input id="reference-number" name="reference_number" value="<?= $v('reference_number') ?>" maxlength="30" data-rule="alnum"><small class="shipment-required">Use letters, numbers, and spaces only.</small></div>
@@ -278,7 +273,7 @@ require_once __DIR__ . '/includes/header.php';
                     <div class="shipment-field"><label for="rate-fetch-type">Rate Fetch Type</label><select id="rate-fetch-type" name="rate_fetch_type"><option>Auto Contract Rate Plan</option><option>Manual</option></select></div>
                     <div class="shipment-field full"><label for="contents">Summarize Contents <span>*</span></label><div class="shipment-inline"><input id="contents" name="contents" value="<?= $v('contents') ?>" required maxlength="100" data-rule="alnum" placeholder="Briefly describe the shipment contents"><label class="shipment-check"><input type="hidden" name="contents_summarized" value="0"><input type="checkbox" name="contents_summarized" value="1" required <?= shipmentOldChecked($oldInput, 'contents_summarized') ? 'checked' : '' ?>> Summary confirmed</label></div><small class="shipment-required">Enter letters, numbers, and spaces (max 100).</small></div>
                     <div class="shipment-field full"><label for="remarks">Remarks</label><textarea id="remarks" name="remarks" maxlength="250"><?= $v('remarks') ?></textarea><small class="shipment-required">Maximum 250 characters.</small></div>
-                    <div class="shipment-field"><label for="customer-reference">Customer Reference</label><select id="customer-reference" name="customer_reference"><option value="">Select</option><option>Website</option><option>Business</option><option>Personal</option></select></div>
+                    <div class="shipment-field"><label for="customer-reference">Customer Reference</label><select id="customer-reference" name="customer_reference"><option value="">Select</option><option>Business</option><option>Personal</option></select></div>
                     <div class="shipment-field"><label for="customs-status">Customs (Paid/UnPaid) <span>*</span></label><select id="customs-status" name="customs_status" required><option value="">Select customs payment status</option><option value="Paid" <?= $v('customs_status') === 'Paid' ? 'selected' : '' ?>>Paid</option><option value="UnPaid" <?= $v('customs_status') === 'UnPaid' ? 'selected' : '' ?>>UnPaid</option></select><small class="shipment-required">Select Paid or UnPaid.</small></div>
                 </div>
                 <div class="shipment-toggle-row">
@@ -315,8 +310,7 @@ require_once __DIR__ . '/includes/header.php';
             <summary><strong>Click here to enter performa details</strong></summary>
             <div class="shipment-buttons"><button id="manifest-gst" type="button" class="shipment-btn secondary">Manifest GST Detail</button></div>
             <div class="shipment-fields" style="margin-top:16px">
-                <div class="shipment-field"><label for="csb-type">CSB Type <span>*</span></label><select id="csb-type" name="csb_type" required><option>CSB 4</option><option>CSB 5</option><option>CSB 3</option></select></div>
-                <div class="shipment-field"><label for="term-of-invoice">Term Of Invoice <span>*</span></label><select id="term-of-invoice" name="term_of_invoice" required><option value="DDU">DDU - Delivery duty unpaid</option><option value="DDP">DDP - Delivery duty paid</option><option value="DAP">DAP - Delivered at place</option><option value="CIF">CIF</option><option value="FOB">FOB</option></select></div>
+                <div class="shipment-field"><label for="term-of-invoice">Term Of Invoice <span>*</span></label><select id="term-of-invoice" name="term_of_invoice" required><option value="DDU">DDU - Delivery duty unpaid</option><option value="DDP">DDP - Delivery duty paid</option><option value="DAP">DAP - Delivered at place</option></select></div>
                 <div class="shipment-field"><label for="export-reason">Export Reason <span>*</span></label><select id="export-reason" name="export_reason" required><option>Gifts</option><option>Sample</option><option>Commercial</option><option>Personal</option><option>Return</option></select></div>
                 <div class="shipment-field"><label for="gst-invoice">GST Invoice</label><select id="gst-invoice" name="gst_invoice"><option value="0">No</option><option value="1">Yes</option></select></div>
                 <div class="shipment-field full" id="gst-summary" hidden><span>GSTIN: <strong id="gstin-summary"></strong></span><button type="button" class="shipment-btn secondary" data-open-gst>Enter GST details</button></div>

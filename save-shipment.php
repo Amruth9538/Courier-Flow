@@ -184,9 +184,6 @@ function saveShipmentAddress(PDO $pdo, int $userId, string $type, array $address
     if (empty($address['auto_save'])) {
         return;
     }
-    if ($type === 'receiver' && ($address['identification_type'] === '' || $address['identification_number'] === '')) {
-        return;
-    }
     if (!empty($address['is_default'])) {
         $pdo->prepare('UPDATE address_book SET is_default = 0 WHERE user_id = ? AND type = ?')
             ->execute([$userId, $type]);
@@ -200,7 +197,9 @@ function saveShipmentAddress(PDO $pdo, int $userId, string $type, array $address
     ];
     $values = [$userId, $type];
     foreach (array_slice($columns, 2, -1) as $column) {
-        $values[] = $address[$column] === '' ? null : $address[$column];
+        $values[] = $address[$column] === ''
+            ? (in_array($column, ['identification_type', 'identification_number'], true) ? '' : null)
+            : $address[$column];
     }
     $values[] = (int) $address['is_default'];
     $stmt = $pdo->prepare('INSERT INTO address_book (' . implode(', ', $columns) . ') VALUES (' . implode(', ', array_fill(0, count($columns), '?')) . ')');
@@ -322,7 +321,7 @@ try {
     }
     $carrier = shipmentInput('carrier', 80);
     $service = shipmentInput('service', 80);
-    if (!in_array($carrier, ['Self', 'CourierFlow', 'Other'], true)
+    if (!in_array($carrier, ['Self', 'Other'], true)
         || !in_array($service, ['Express Saver', 'Standard', 'Economy'], true)) {
         throw new RuntimeException('Select a valid carrier and service.');
     }
@@ -341,7 +340,7 @@ try {
         throw new RuntimeException('Select Paid or UnPaid customs status for the international shipment.');
     }
     $customerReference = shipmentInput('customer_reference', 100);
-    if (!in_array($customerReference, ['', 'Website', 'Business', 'Personal'], true)) {
+    if (!in_array($customerReference, ['', 'Business', 'Personal'], true)) {
         throw new RuntimeException('Select a valid customer reference.');
     }
     $termsOfDelivery = shipmentInput('terms_of_delivery', 255);
@@ -352,11 +351,9 @@ try {
     if (!in_array($packaging, ['Use My Own Package', 'Box', 'Envelope', 'Pallet'], true)) {
         throw new RuntimeException('Select valid packaging.');
     }
-    $csbType = shipmentInput('csb_type', 30);
     $termOfInvoice = shipmentInput('term_of_invoice', 100);
     $exportReason = shipmentInput('export_reason', 100);
-    if (!in_array($csbType, ['CSB 4', 'CSB 5', 'CSB 3'], true)
-        || !in_array($termOfInvoice, ['DDU', 'DDP', 'DAP', 'CIF', 'FOB'], true)
+    if (!in_array($termOfInvoice, ['DDU', 'DDP', 'DAP'], true)
         || !in_array($exportReason, ['Gifts', 'Sample', 'Commercial', 'Personal', 'Return'], true)) {
         throw new RuntimeException('Select valid performa details.');
     }
@@ -473,7 +470,7 @@ try {
         'actual_wt' => round($actualWeight, 3),
         'vol_wt' => round($volWeight, 3),
         'chg_wt' => round($chargeableWeight, 3),
-        'csb_type' => $csbType,
+        'csb_type' => 'CSB 4',
         'term_of_invoice' => $termOfInvoice,
         'export_reason' => $exportReason,
         'gst_invoice' => $gstInvoice ? 1 : 0,

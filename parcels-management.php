@@ -72,11 +72,6 @@ require_once __DIR__ . '/includes/header.php';
                             <small class="shipment-required" data-error-for="<?= $group ?>-name">Enter 2–50 letters, spaces, dots, hyphens, or apostrophes.</small>
                         </div>
                         <div class="shipment-field">
-                            <label for="<?= $group ?>-company">Company</label>
-                            <input id="<?= $group ?>-company" name="<?= $group ?>[company]" value="<?= $field($group, 'company') ?>" maxlength="80" data-rule="alnum">
-                            <small class="shipment-required">Letters and numbers only.</small>
-                        </div>
-                        <div class="shipment-field">
                             <label for="<?= $group ?>-country">Country <span>*</span></label>
                             <input id="<?= $group ?>-country" value="INDIA" readonly aria-readonly="true">
                             <input type="hidden" name="<?= $group ?>[country]" value="INDIA">
